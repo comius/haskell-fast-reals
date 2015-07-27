@@ -33,6 +33,8 @@
 
 module Staged where
 
+import Control.Applicative
+
 -- | The rounding mode tells us whether we should under- or over-approximate the exact result.
 data RoundingMode = RoundUp | RoundDown
                   deriving (Eq, Show)
