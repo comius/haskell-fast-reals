@@ -127,9 +127,9 @@ Without the do notation we would have to have a double loop of some kind. Here i
 > -- binary k computes all binary lists of length k
 > binary :: Int -> Choose [Int]
 > binary 0 = return []
-> binary (k+1) = do b <- Choices [0,1]
->                   bs <- binary k
->                   return (b:bs)
+> binary k = do b <- Choices [0,1]
+>               bs <- (binary (k-1))
+>               return (b:bs)
 
 The monad we just considered is also built into Haskell, and is known as the "list monad". Possible choices are represented as a list, so we can write [x1,...,xn] rather than Choices [x1,...,xn]:
 
@@ -220,3 +220,5 @@ Further reading:
 3. http://blog.sigfpe.com/
    "A neighborhood of infinity"
    Dan Piponi's blog has many clever and mind boggling examples of monads
+
+
