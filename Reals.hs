@@ -9,7 +9,7 @@ module Reals where
 import Data.Ratio
 import Staged
 import Space
-import Dyadic
+import ApproximateField 
 import Interval
 
 
@@ -98,17 +98,6 @@ instance IntervalDomain q => Compact (ClosedInterval q) (RealNum q) where
 -- | Missing: overtness of reals, open interval (a,b) and closed interval [a,b]
 instance IntervalDomain q => Overt (ClosedInterval q) (RealNum q) where
      exists (ClosedInterval (a,b)) p = error "Not implemented"
-
--- | We define the a particular implementation of reals in terms of Dyadic numbers.
--- Because 'IntervalDomain' has a default implementation for all of its components we
--- don't have to implement anything.
-instance IntervalDomain Dyadic
-
--- | This is a convenience function which allows us to write @exact 1.3@ as a
--- conversion from floating points to real numbers. There probably is a better way of
--- doing this.
-exact :: RealNum Dyadic -> RealNum Dyadic
-exact x = x
 
 -- | Reals form a complete space, which means that every Cauchy sequence of reals has
 -- a limit. In the implementation this is manifested by the existence of an operator

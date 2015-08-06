@@ -11,51 +11,14 @@
 -}
 
 module Dyadic (
-  ApproximateField(..), Dyadic(..),
+  Dyadic(..),
 ) where
 
 import Data.Bits
-
 import Staged
-
-{- | An approximate field is a structure in which we can perform approximate
-arithmetical operations. The typical example is the ring of dyadic rational
-numbers: division of dyadic rationals is only approximate, and even though the
-other operations (+, -, *) can be peformed exactly, it is too expensive and
-unecessary to do so in an interval computation. Therefore, we want approximate
-versions of all operations.
-
-The approximate operations take a 'Stage' argument which tells whether the
-result of the operation should be rounded up or down, in the sense of the
-linear ordering of the structure, and how precise the result should be.
-
-(Missing explanation of what exactly an approximate field is supposed to be.)
--}
-class (Show q, Ord q) => ApproximateField q where
-  normalize :: Stage -> q -> q
-  size :: q -> Int -- ^ the size of the number (memory usage)
-  log2 :: q -> Int -- ^ @log2 q@ is a number @k@ such that @2^k <= abs q <= 2^(k+1)@.
-
-  midpoint :: q -> q -> q -- ^ exact midpoint
-
-  zero :: q
-  positive_inf :: q
-  negative_inf :: q
-
-  toFloat :: q -> Double
-
-  -- approximate operations
-  app_add :: Stage -> q -> q -> q
-  app_sub :: Stage -> q -> q -> q
-  app_mul :: Stage -> q -> q -> q
-  app_inv :: Stage -> q -> q
-  app_div :: Stage -> q -> q -> q
-  app_negate :: Stage -> q -> q
-  app_abs :: Stage -> q -> q
-  app_signum :: Stage -> q -> q
-  app_fromInteger :: Stage -> Integer -> q
-  app_shift :: Stage -> q -> Int -> q -- ^ shift by a power of 2
-
+import ApproximateField
+import Interval
+import Reals
 
 -- | A dyadic number is of the form @m * 2^e@ where @m@ is the /mantissa/ and @e@ is the /exponent/.
 data Dyadic = Dyadic { mant :: Integer, expo :: Int }
@@ -283,3 +246,17 @@ instance ApproximateField Dyadic where
   app_shift s PositiveInfinity k = PositiveInfinity
   app_shift s NegativeInfinity k = NegativeInfinity
   app_shift s Dyadic {mant=m, expo=e} k = normalize s (Dyadic {mant = m, expo = e + k})
+
+
+-- | We define the a particular implementation of reals in terms of Dyadic numbers.
+-- Because 'IntervalDomain' has a default implementation for all of its components we
+-- don't have to implement anything.
+instance IntervalDomain Dyadic
+
+-- | This is a convenience function which allows us to write @exact 1.3@ as a
+-- conversion from floating points to real numbers. There probably is a better way of
+-- doing this.
+exact :: RealNum Dyadic -> RealNum Dyadic
+exact x = x
+
+
