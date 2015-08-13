@@ -1,0 +1,12 @@
+
+:load DyadicMPFR
+import Reals
+import Space
+
+let a = exact 1.3
+
+a * (1 - a)
+a ^ 200
+forall (ClosedInterval (0,1)) $ \x -> (x * (1 - x)) `less` exact 0.26
+forall (ClosedInterval (0,1)) $ \x -> (x * (1 - x)) `less` exact 0.24
+                  
