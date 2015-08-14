@@ -49,13 +49,13 @@ data Stage = Stage { precision :: Int, rounding :: RoundingMode }
 anti :: Stage -> Stage
 anti s = Stage {precision = precision s, rounding = case rounding s of { RoundUp -> RoundDown ; RoundDown -> RoundUp}}
 
--- | @prec_down k@ sets precision to @k@ and the rounding mode to 'RoundDown'
-prec_down :: Int -> Stage
-prec_down k = Stage {precision = k, rounding = RoundDown}
+-- | @precDown k@ sets precision to @k@ and the rounding mode to 'RoundDown'
+precDown :: Int -> Stage
+precDown k = Stage {precision = k, rounding = RoundDown}
 
--- | @prec_up k@ sets precision to @k@ and the rounding mode to 'RoundUp'
-prec_up :: Int -> Stage
-prec_up k = Stage {precision = k, rounding = RoundUp}
+-- | @precUp k@ sets precision to @k@ and the rounding mode to 'RoundUp'
+precUp :: Int -> Stage
+precUp k = Stage {precision = k, rounding = RoundUp}
 
 -- | @prec r k@ is the stage with given rounding @r@ and precision @k@
 prec :: RoundingMode -> Int -> Stage
@@ -72,10 +72,10 @@ prec r k = Stage {precision = k, rounding = r}
 -}
 
 class (Functor m, Monad m) => Completion m where
-    get_stage :: m Stage -- ^ get the current stage
-    get_rounding :: m RoundingMode -- ^ get the current rounding
-    get_prec :: m Int -- ^ get the current precision
-    approximate :: m t -> (Stage -> t) -- ^ approximate by a chain (from above or from below, depending on rounding mode)
+    getStage :: m Stage -- ^ get the current stage
+    getRounding :: m RoundingMode -- ^ get the current rounding
+    getPrec :: m Int -- ^ get the current precision
+    approximate :: m t -> Stage -> t -- ^ approximate by a chain (from above or from below, depending on rounding mode)
     limit :: (Stage -> t) -> m t -- ^ the element represented by a given chain
 
     embed :: t -> m t -- ^ a synonym for @return@
@@ -84,14 +84,14 @@ class (Functor m, Monad m) => Completion m where
     -- | lift a map from approximations to points
     lift1 :: (Stage -> t -> u) -> m t -> m u
     lift1 f x = do a <- x
-                   s <- get_stage
+                   s <- getStage
                    return $ f s a
 
     -- | lift a map of two arguments from approximations to points.
     lift2 :: (Stage -> t -> u -> v) -> m t -> m u -> m v
     lift2 f x y = do a <- x
                      b <- y
-                     s <- get_stage
+                     s <- getStage
                      return $ f s a b
 
 -- | If @t@ is the type of approximations then, @Staged t@ is the type of the points of the space,
@@ -100,7 +100,7 @@ newtype Staged t = Staged { approx :: Stage -> t }
 
 -- | The monad structure of 'Staged' is the same as that of the @Reader@ monad.
 instance Monad Staged where
-  return x = Staged $ \s -> x
+  return x = Staged $ const x
   x >>= f  = Staged $ \s -> approx (f (approx x s)) s
 
 -- | The functor structure of 'Staged' is the same as that of the @Reader@ monad.
@@ -108,14 +108,15 @@ instance Functor Staged where
     fmap f x = Staged $ \s -> f (approx x s)
 
 instance Applicative Staged where
-    pure a    = Staged $ \s -> a
-    (<*>) f x = Staged $ \s -> (approx f  s) (approx x s)
+    pure a    = Staged $ const a
+    (<*>) f x = Staged $ \s -> approx f s (approx x s)
     
 
 -- | 'Staged' is an instance of a completion.
 instance Completion Staged where
-    get_stage = Staged $ \s -> s
-    get_rounding = Staged $ rounding
-    get_prec = Staged $ precision
+    getStage = Staged id
+    getRounding = Staged rounding
+    getPrec = Staged precision
     approximate = approx
     limit = Staged
+

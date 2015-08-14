@@ -4,7 +4,7 @@ module Searchable where
 
 data Searchable a = Finder ((a -> Bool) -> a)
 find :: Searchable a -> (a -> Bool) -> a
-find (Finder epsilon) p = epsilon p
+find (Finder epsilon) = epsilon
 
 -- auxiliary function search
 search :: Searchable a -> (a -> Bool) -> Maybe a
@@ -21,15 +21,15 @@ forall s p = not (exists s (not . p))
 -- some searchable spaces
 
 -- singleton
-singleton x = Finder (\p -> x)
+singleton x = Finder (const x)
 
 -- doubleton
 doubleton x y = Finder (\p -> if p x then x else y)
 
 -- finite non-empty sets
-finite_set :: [a] -> Searchable a
+finiteSet :: [a] -> Searchable a
 
-finite_set lst = Finder (\p ->
+finiteSet lst = Finder (\p ->
     let loop []     = undefined
         loop [x]    = x
         loop (x:xs) = if p x then x else loop xs

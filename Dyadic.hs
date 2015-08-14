@@ -106,11 +106,11 @@ instance Num Dyadic where
   _ * NaN = NaN
   NegativeInfinity * q = case zeroCmp q of
                            LT -> NegativeInfinity -- 0 < q
-                           EQ -> fromInteger 0    -- 0 == q
+                           EQ -> 0                -- 0 == q
                            GT -> PositiveInfinity -- q < 0
   PositiveInfinity * q = case zeroCmp q of
                            LT -> PositiveInfinity -- 0 < q
-                           EQ -> fromInteger 0    -- 0 == q
+                           EQ -> 0                -- 0 == q
                            GT -> NegativeInfinity -- q < 0
   q@(Dyadic _ _) * NegativeInfinity = NegativeInfinity * q
   q@(Dyadic _ _) * PositiveInfinity = PositiveInfinity * q
@@ -124,8 +124,8 @@ instance Num Dyadic where
   
   -- signum
   signum NaN = NaN
-  signum PositiveInfinity = fromInteger 1
-  signum NegativeInfinity = fromInteger (-1)
+  signum PositiveInfinity = 1
+  signum NegativeInfinity = -1
   signum Dyadic {mant=m, expo=e} = fromInteger (signum m)
 
   -- fromInteger
@@ -138,7 +138,7 @@ instance Num Dyadic where
 ilogb :: Integer -> Integer -> Int
 ilogb b n | n < 0      = ilogb b (- n)
           | n < b      = 0
-          | otherwise  = (up b n 1) - 1
+          | otherwise  = up b n 1 - 1
   where up b n a = if n < (b ^ a)
                       then bin b (quot a 2) a
                       else up b n (2*a)
@@ -214,7 +214,7 @@ instance ApproximateField Dyadic where
   app_add s a b = normalize s (a + b)
   app_sub s a b = normalize s (a - b)
   app_mul s a b = normalize s (a * b)
-  app_negate s a = negate a
+  app_negate s = negate
   app_abs s a = normalize s (abs a)
   app_signum s a = normalize s (signum a)
   app_fromInteger s i   = normalize s (fromInteger i)
@@ -245,7 +245,7 @@ instance ApproximateField Dyadic where
   app_shift s NaN k = normalize s NaN
   app_shift s PositiveInfinity k = PositiveInfinity
   app_shift s NegativeInfinity k = NegativeInfinity
-  app_shift s Dyadic {mant=m, expo=e} k = normalize s (Dyadic {mant = m, expo = e + k})
+  app_shift s Dyadic {mant=m, expo=e} k = normalize s Dyadic {mant = m, expo = e + k}
 
 -- | This is a convenience function which allows us to write @exact 1.3@ as a
 -- conversion from floating points to real numbers. There probably is a better way of

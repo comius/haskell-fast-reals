@@ -63,10 +63,10 @@ instance ApproximateField q => IntervalDomain q where
 
   -- Kaucher multiplication
   imul s Interval{lower=a,upper=b} Interval{lower=c,upper=d} =
-    let negative q = (compare q zero == LT)
+    let negative q = q < zero
         lmul = app_mul s
         umul = app_mul (anti s)
-    in Interval { lower = (if negative a
+    in Interval { lower = if negative a
                            then if negative b
                                 then if negative d
                                      then lmul b d
@@ -88,8 +88,8 @@ instance ApproximateField q => IntervalDomain q where
                                           else lmul a c
                            else if negative c
                                 then lmul b c
-                                else lmul a c),
-                  upper = (if negative a
+                                else lmul a c,
+                  upper = if negative a
                            then if negative b
                                 then if negative c
                                      then umul a c
@@ -111,13 +111,13 @@ instance ApproximateField q => IntervalDomain q where
                                           else umul b c
                                 else if negative d
                                      then umul a d
-                                     else umul b d)}
+                                     else umul b d}
 
   iinv s Interval{lower=a, upper=b} =
     let sgn q = compare q zero
         linv = app_inv s
         uinv = app_inv (anti s)
-    in Interval { lower = (case (sgn a, sgn b) of
+    in Interval { lower = case (sgn a, sgn b) of
                              (LT, LT) -> linv b
                              (EQ, LT) -> linv b
                              (GT, LT) -> positive_inf
@@ -126,8 +126,8 @@ instance ApproximateField q => IntervalDomain q where
                              (GT, EQ) -> positive_inf
                              (LT, GT) -> negative_inf
                              (EQ, GT) -> negative_inf
-                             (GT, GT) -> linv b),
-                  upper = (case (sgn a, sgn b) of
+                             (GT, GT) -> linv b,
+                  upper = case (sgn a, sgn b) of
                              (LT, LT) -> uinv a
                              (EQ, LT) -> negative_inf
                              (GT, LT) -> negative_inf
@@ -136,7 +136,7 @@ instance ApproximateField q => IntervalDomain q where
                              (GT, EQ) -> uinv a
                              (LT, GT) -> positive_inf
                              (EQ, GT) -> positive_inf
-                             (GT, GT) -> uinv a)}
+                             (GT, GT) -> uinv a}
 
   idiv s a b = imul s a (iinv s b)
   
@@ -145,7 +145,7 @@ instance ApproximateField q => IntervalDomain q where
 
   embed s q = Interval { lower = q, upper = q }
 
-  iabs s a = Interval { lower = app_fromInteger s (fromInteger 0),
+  iabs s a = Interval { lower = app_fromInteger s 0,
                         upper = let q = app_negate s (lower a)
                                     r = upper a
                                 in if q < r then r else q }

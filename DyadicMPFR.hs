@@ -57,7 +57,7 @@ instance ApproximateField MPFR where
   midpoint a b | isNaN b = b
   midpoint a b | isInfinite a && isInfinite b && a == b = a  
   midpoint a b | isInfinite a && isInfinite b = Data.Number.MPFR.zero
-  midpoint a b | otherwise = mul2i Near p (add Near p a b) (-1)
+  midpoint a b = mul2i Near p (add Near p a b) (-1)
            where p = 1 + maxPrec a b
 
 {-  midpoint NaN _ = NaN

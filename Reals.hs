@@ -27,7 +27,7 @@ instance ApproximateField q => Show (RealNum q) where
 
 -- | Linear order on real numbers
 instance IntervalDomain q => LinearOrder (RealNum q) where
-    less = lift2 (\_ -> iless)
+    less = lift2 (const iless)
 
 -- | It is a bad idea to use Haskell-style inequality @/=@ on reals because it either returns @True@
 -- or it diverges. Similarly, using Haskell equality @==@ is bad. Nevertheless, we define @==@ and @/=@
@@ -38,32 +38,30 @@ instance IntervalDomain q => Eq (RealNum q) where
 -- | Real numbers are an ordered type in the sense of Haskells 'Ord', although a comparison never
 -- returns @EQ@ (instead it diverges). This is a fact of life, comparison of reals is not decidable.
 instance IntervalDomain q => Ord (RealNum q) where
-  compare x y = case force (x `less` y) of
-                  True  -> LT
-                  False -> GT
+  compare x y = if force (x `less` y) then LT else GT
 
 -- | The ring structure fo the reals.
 instance (ApproximateField q, IntervalDomain q) => Num (RealNum q) where
-    x + y = lift2 iadd x y
-    x - y = lift2 isub x y
-    x * y = lift2 imul x y
+    (+) = lift2 iadd
+    (-) = lift2 isub
+    (*) = lift2 imul
 
-    abs x = lift1 iabs x
+    abs = lift1 iabs
 
     signum x = do i <- x
-                  s <- get_stage
-                  return $ Interval { lower = app_signum s (lower i),
+                  s <- getStage
+                  return Interval { lower = app_signum s (lower i),
                                       upper = app_signum (anti s) (upper i) }
 
-    fromInteger k = do s <- get_stage
-                       return $ Interval { lower = app_fromInteger s k,
+    fromInteger k = do s <- getStage
+                       return Interval { lower = app_fromInteger s k,
                                            upper = app_fromInteger (anti s) k }
 
 -- | Division and reciprocals.
 instance (ApproximateField q, IntervalDomain q) => Fractional (RealNum q) where
-    x / y = lift2 idiv x y
+    (/) = lift2 idiv
             
-    recip x = lift1 iinv x
+    recip = lift1 iinv
                       
     fromRational r = fromInteger (numerator r) / fromInteger (denominator r)
 
@@ -117,12 +115,12 @@ lim x =
 -- | Reals form an Archimedean field. Topologically speaking, this means that the
 -- underlying approximate field @q@ is dense in the reals. Computationally this means
 -- that we can compute arbitrarily good @q@-approximations to real numbers. The
--- function 'approx_to x k' computes an approximation @a@ of type @q@ which is within
+-- function 'approxTo x k' computes an approximation @a@ of type @q@ which is within
 -- @2^-k@ of @x@.
-approx_to :: IntervalDomain q => RealNum q -> Int -> q
-approx_to x k =
-    error "approx_to not implemented"
-    {- the simplest way to implement approx_to is to keep calling
+approxTo :: IntervalDomain q => RealNum q -> Int -> q
+approxTo x k =
+    error "approxTo not implemented"
+    {- the simplest way to implement approxTo is to keep calling
        @approximate x (prec RoundDown n)@ until @n@ is so large that the returned
        interval has width at most @2^(-n-1)@. The center of the
        interval is the approximation we seek.
