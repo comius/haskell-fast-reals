@@ -13,9 +13,10 @@ extra-source-files:  README.txt
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     Lipschitz, Searchable, Dyadic, Staged, Interval, Space, Reals
+  exposed-modules:     Lipschitz, Dyadic, DyadicMPFR, Staged, Interval, Space, Reals
   -- other-modules:       
   other-extensions:    Arrows, MultiParamTypeClasses, FunctionalDependencies, TypeSynonymInstances, FlexibleInstances
   build-depends:       base >=4.7 && <4.8
+  build-depends:       hmpfr
   -- hs-source-dirs:      
   default-language:    Haskell2010

@@ -39,7 +39,7 @@ instance ApproximateField MPFR where
                       RoundUp -> positive_inf
   normalize s a = set (rnd s) (prec s) a
   
-  size = fromInteger . toInteger . getPrec
+  size = fromInteger . toInteger . Data.Number.MPFR.getPrec
 
   
 --  log2 NaN = error "log2 of NaN"
