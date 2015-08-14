@@ -75,7 +75,7 @@ instance IntervalDomain q => Hausdorff (RealNum q) where
 newtype ClosedInterval q = ClosedInterval (q, q)
 
 -- | Compactness of the closed interval
-instance IntervalDomain q => Compact (ClosedInterval q) (RealNum q) where
+instance (ApproximateField q, IntervalDomain q) => Compact (ClosedInterval q) (RealNum q) where
    forall (ClosedInterval(a,b)) p =
      limit (\s ->
        let r = rounding s

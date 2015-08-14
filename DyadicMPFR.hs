@@ -116,11 +116,6 @@ instance ApproximateField MPFR where
   app_shift s Dyadic {mant=m, expo=e} k = normalize s (Dyadic {mant = m, expo = e + k})
 -}
 
--- | We define the a particular implementation of reals in terms of Dyadic numbers.
--- Because 'IntervalDomain' has a default implementation for all of its components we
--- don't have to implement anything.
-instance IntervalDomain MPFR
-
 -- | This is a convenience function which allows us to write @exact 1.3@ as a
 -- conversion from floating points to real numbers. There probably is a better way of
 -- doing this.

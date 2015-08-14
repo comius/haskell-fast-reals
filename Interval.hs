@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleInstances, UndecidableInstances #-}
+
 {- | This module defines the interval domain, i.e., the space of
   intervals. Actually, what we define as a /base/ for such a domain
   because our intervals have rational endpoints (to be exact, the
@@ -31,7 +33,7 @@ instance ApproximateField q => Show (Interval q) where
     then show a
     else "[" ++ show a ++ "," ++ show b ++ "]"  
 
-class ApproximateField q => IntervalDomain q  where
+class IntervalDomain q  where
   iless :: Interval q -> Interval q -> Bool
   imore :: Interval q -> Interval q -> Bool
   iadd :: Stage -> Interval q -> Interval q -> Interval q
@@ -45,6 +47,10 @@ class ApproximateField q => IntervalDomain q  where
   split :: Interval q -> (Interval q, Interval q)
   -- width :: Interval q -> q
 
+
+{- | We define the implementation of intervals in terms of ApproximateField. -}
+
+instance ApproximateField q => IntervalDomain q where
   iless i j = upper i < lower j
 
   imore i j = iless j i
