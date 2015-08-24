@@ -1,4 +1,4 @@
-{- | This module contains specification of approximate field. 
+{- | This module contains specification of approximate field.
 -}
 
 module ApproximateField (
@@ -21,9 +21,9 @@ linear ordering of the structure, and how precise the result should be.
 (Missing explanation of what exactly an approximate field is supposed to be.)
 -}
 class (Show q, Ord q) => ApproximateField q where
-  normalize :: Stage -> q -> q
-  size :: q -> Int -- ^ the size of the number (memory usage)
-  log2 :: q -> Int -- ^ @log2 q@ is a number @k@ such that @2^k <= abs q <= 2^(k+1)@.
+--  normalize :: Stage -> q -> q
+--  size :: q -> Int -- ^ the size of the number (memory usage)
+--  log2 :: q -> Int -- ^ @log2 q@ is a number @k@ such that @2^k <= abs q <= 2^(k+1)@.
 
   midpoint :: q -> q -> q -- ^ exact midpoint
 
@@ -31,7 +31,7 @@ class (Show q, Ord q) => ApproximateField q where
   positive_inf :: q
   negative_inf :: q
 
-  toFloat :: q -> Double
+--  toFloat :: q -> Double
 
   -- approximate operations
   app_add :: Stage -> q -> q -> q
@@ -40,8 +40,7 @@ class (Show q, Ord q) => ApproximateField q where
   app_inv :: Stage -> q -> q
   app_div :: Stage -> q -> q -> q
   app_negate :: Stage -> q -> q
-  app_abs :: Stage -> q -> q
-  app_signum :: Stage -> q -> q
+--  app_abs :: Stage -> q -> q
+--  app_signum :: Stage -> q -> q
   app_fromInteger :: Stage -> Integer -> q
   app_shift :: Stage -> q -> Int -> q -- ^ shift by a power of 2
-

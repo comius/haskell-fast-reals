@@ -10,7 +10,7 @@
 module Interval where
 
 import Staged
-import ApproximateField 
+import ApproximateField
 
 {- | An interval is represented by a lower and upper endpoint. We do
   /not/ require that the lower endpoint be smaller or equal to the
@@ -31,7 +31,7 @@ instance ApproximateField q => Show (Interval q) where
   show Interval{lower=a, upper=b} =
     if a == b
     then show a
-    else "[" ++ show a ++ "," ++ show b ++ "]"  
+    else "[" ++ show a ++ "," ++ show b ++ "]"
 
 class IntervalDomain q  where
   iless :: Interval q -> Interval q -> Bool
@@ -42,7 +42,7 @@ class IntervalDomain q  where
   iinv :: Stage -> Interval q -> Interval q
   idiv :: Stage -> Interval q -> Interval q -> Interval q
   iabs :: Stage -> Interval q -> Interval q
-  inormalize :: Stage -> Interval q -> Interval q
+--  inormalize :: Stage -> Interval q -> Interval q
   embed :: Stage -> q -> Interval q
   split :: Interval q -> (Interval q, Interval q)
   -- width :: Interval q -> q
@@ -72,7 +72,7 @@ instance ApproximateField q => IntervalDomain q where
                                      then lmul b d
                                      else lmul a d
                                 else if negative c
-                                     then if negative d 
+                                     then if negative d
                                           then lmul b c
                                           else min (lmul a d) (lmul b c)
                                      else if negative d
@@ -139,9 +139,9 @@ instance ApproximateField q => IntervalDomain q where
                              (GT, GT) -> uinv a}
 
   idiv s a b = imul s a (iinv s b)
-  
-  inormalize s a = Interval { lower = normalize s (lower a),
-                              upper = normalize (anti s) (upper a) }
+
+--  inormalize s a = Interval { lower = normalize s (lower a),
+--                              upper = normalize (anti s) (upper a) }
 
   embed s q = Interval { lower = q, upper = q }
 

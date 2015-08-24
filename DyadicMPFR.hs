@@ -1,6 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{- | This module contains a faster implementation of dyadic rationals using 
+{- | This module contains a faster implementation of dyadic rationals using
    a fast arbitrary-precision floating-point library MPFR via haskel module Data.Rounded
 -}
 
@@ -11,7 +11,7 @@ import Staged hiding (prec)
 import ApproximateField
 import Interval
 import Reals
- 
+
 {- | Dyadics with normalization and rounding form an "approximate"
   field in which operations can be performed up to a given precision.
 
@@ -34,28 +34,28 @@ instance Num MPFR where
   fromInteger = fromIntegerA Near 53
 
 instance ApproximateField MPFR where
-  normalize s a | isNaN a = case rounding s of
-                      RoundDown -> negative_inf
-                      RoundUp -> positive_inf
+{-  normalize s a | isNaN a = case rounding s of
+                     RoundDown -> negative_inf
+                     RoundUp -> positive_inf
   normalize s a = set (rnd s) (prec s) a
-  
-  size = fromInteger . toInteger . Data.Number.MPFR.getPrec
 
-  
+  size = fromInteger . toInteger . Data.Number.MPFR.getPrec
+-}
+
 --  log2 NaN = error "log2 of NaN"
 --  log2 PositiveInfinity = error "log2 of +inf"
 --  log2 NegativeInfinity = error "log2 of -inf"
---  log2 Dyadic{mant=m, expo=e} = e + ilogb 2 m 
+--  log2 Dyadic{mant=m, expo=e} = e + ilogb 2 m
 
   zero = Data.Number.MPFR.zero
   positive_inf = setInf 0 1
   negative_inf = setInf 0 (-1)
 
-  toFloat = toDouble Near
- 
+--  toFloat = toDouble Near
+
   midpoint a b | isNaN a = a
   midpoint a b | isNaN b = b
-  midpoint a b | isInfinite a && isInfinite b && a == b = a  
+  midpoint a b | isInfinite a && isInfinite b && a == b = a
   midpoint a b | isInfinite a && isInfinite b = Data.Number.MPFR.zero
   midpoint a b = mul2i Near p (add Near p a b) (-1)
            where p = 1 + maxPrec a b
@@ -78,12 +78,12 @@ instance ApproximateField MPFR where
   app_sub s = sub (rnd s) (prec s)
   app_mul s = mul (rnd s) (prec s)
   app_negate s = neg (rnd s) (prec s)
-  app_abs s = absD (rnd s) (prec s)
-  app_signum s a = case sgn a of 
+{-  app_abs s = absD (rnd s) (prec s)
+  app_signum s a = case sgn a of
   	Nothing -> error "sign of NaN"
 	Just i -> fromInt (rnd s) (prec s) i
   app_fromInteger s = fromIntegerA (rnd s) (prec s)
-
+-}
   app_inv s a = powi (rnd s) (prec s) a (-1)
 {-  app_inv s NaN = normalize s NaN
   app_inv s PositiveInfinity = zero
@@ -93,9 +93,9 @@ instance ApproximateField MPFR where
         b = ilogb 2 m
         r = case rounding s of
               RoundDown -> 0
-              RoundUp -> 1        
+              RoundUp -> 1
     in if signum m == 0
-       then normalize s NaN 
+       then normalize s NaN
        else Dyadic {mant = r + (shiftL 1 (d + b)) `div` m, expo = -(b + d + e)}
 -}
   app_div s = div (rnd s) (prec s)
@@ -121,6 +121,3 @@ instance ApproximateField MPFR where
 -- doing this.
 exact :: RealNum MPFR -> RealNum MPFR
 exact x = x
-
-
-

@@ -2,7 +2,7 @@
    for interval arithmetic. A faster implementation of dyadic rationals would use
    a fast arbitrary-precision floating-point library, such as MPFR and the related
    hmpfr Haskell bindings for it.
-   
+
    A dyadic number is a rational whose denominator is a power of 2. We also include
    positive and negative infinity, these are useful for representing infinite intervals.
    The special value 'NaN' (not a number) is included as well in order to follow more closely
@@ -121,7 +121,7 @@ instance Num Dyadic where
   abs PositiveInfinity = PositiveInfinity
   abs NegativeInfinity = NegativeInfinity
   abs Dyadic {mant=m, expo=e} = Dyadic {mant = abs m, expo = e}
-  
+
   -- signum
   signum NaN = NaN
   signum PositiveInfinity = 1
@@ -148,24 +148,14 @@ ilogb b n | n < 0      = ilogb b (- n)
                               in if n < (b ^ av)
                                     then bin b lo av
                                     else bin b av hi
-    
-{- | Dyadics with normalization and rounding form an "approximate"
-  field in which operations can be performed up to a given precision.
 
-  We take the easy route: first we perform an exact operation then we
-  normalize the result. A better implementation would directly compute
-  the approximation, but it's probably not worth doing this with
-  Dyadics. If you want speed, use hmpfr, see
-  <http://hackage.haskell.org/package/hmpfr>.
--}
 
-instance ApproximateField Dyadic where
-  normalize s NaN = case rounding s of
+normalize s NaN = case rounding s of
                       RoundDown -> NegativeInfinity
                       RoundUp -> PositiveInfinity
-  normalize s PositiveInfinity = PositiveInfinity
-  normalize s NegativeInfinity = NegativeInfinity
-  normalize s a@(Dyadic {mant=m, expo=e}) =
+normalize s PositiveInfinity = PositiveInfinity
+normalize s NegativeInfinity = NegativeInfinity
+normalize s a@(Dyadic {mant=m, expo=e}) =
       let j = ilogb 2 m
           k = precision s
           r = rounding s
@@ -178,7 +168,20 @@ instance ApproximateField Dyadic where
                          RoundDown -> if signum y > 0 then y else succ y
                          RoundUp -> if signum y > 0 then succ y else y
 
-  size NaN = 0
+
+{- | Dyadics with normalization and rounding form an "approximate"
+  field in which operations can be performed up to a given precision.
+
+  We take the easy route: first we perform an exact operation then we
+  normalize the result. A better implementation would directly compute
+  the approximation, but it's probably not worth doing this with
+  Dyadics. If you want speed, use hmpfr, see
+  <http://hackage.haskell.org/package/hmpfr>.
+-}
+
+instance ApproximateField Dyadic where
+
+{-  size NaN = 0
   size PositiveInfinity = 0
   size NegativeInfinity = 0
   size Dyadic{mant=m, expo=e} = ilogb 2 m
@@ -186,16 +189,16 @@ instance ApproximateField Dyadic where
   log2 NaN = error "log2 of NaN"
   log2 PositiveInfinity = error "log2 of +inf"
   log2 NegativeInfinity = error "log2 of -inf"
-  log2 Dyadic{mant=m, expo=e} = e + ilogb 2 m 
+  log2 Dyadic{mant=m, expo=e} = e + ilogb 2 m-}
 
   zero = Dyadic {mant=0, expo=1}
   positive_inf = PositiveInfinity
   negative_inf = NegativeInfinity
 
-  toFloat NaN = 0.0 / 0.0
+{-  toFloat NaN = 0.0 / 0.0
   toFloat PositiveInfinity = 1.0 / 0.0
   toFloat NegativeInfinity = - 1.0 / 0.0
-  toFloat Dyadic{mant=m, expo=e} = encodeFloat m e
+  toFloat Dyadic{mant=m, expo=e} = encodeFloat m e-}
 
   midpoint NaN _ = NaN
   midpoint _ NaN = NaN
@@ -215,8 +218,8 @@ instance ApproximateField Dyadic where
   app_sub s a b = normalize s (a - b)
   app_mul s a b = normalize s (a * b)
   app_negate s = negate
-  app_abs s a = normalize s (abs a)
-  app_signum s a = normalize s (signum a)
+{-  app_abs s a = normalize s (abs a)
+  app_signum s a = normalize s (signum a)-}
   app_fromInteger s i   = normalize s (fromInteger i)
 
   app_inv s NaN = normalize s NaN
@@ -227,9 +230,9 @@ instance ApproximateField Dyadic where
         b = ilogb 2 m
         r = case rounding s of
               RoundDown -> 0
-              RoundUp -> 1        
+              RoundUp -> 1
     in if signum m == 0
-       then normalize s NaN 
+       then normalize s NaN
        else Dyadic {mant = r + (shiftL 1 (d + b)) `div` m, expo = -(b + d + e)}
 
   app_div s Dyadic{mant=m1,expo=e1} Dyadic{mant=m2,expo=e2} =
@@ -252,5 +255,3 @@ instance ApproximateField Dyadic where
 -- doing this.
 exact :: RealNum Dyadic -> RealNum Dyadic
 exact x = x
-
-

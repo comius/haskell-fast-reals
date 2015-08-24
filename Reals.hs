@@ -9,7 +9,7 @@ module Reals where
 import Data.Ratio
 import Staged
 import Space
-import ApproximateField 
+import ApproximateField
 import Interval
 
 
@@ -23,7 +23,7 @@ type RealNum q = Staged (Interval q)
 -- and shows it as an interval, together with a floating point approximation.
 instance ApproximateField q => Show (RealNum q) where
    show x = let i = approximate x (prec RoundDown 20)
-            in show i ++ " " ++ show (toFloat (midpoint (lower i) (upper i)))
+            in show i ++ " " ++ show (midpoint (lower i) (upper i))
 
 -- | Linear order on real numbers
 instance IntervalDomain q => LinearOrder (RealNum q) where
@@ -48,10 +48,11 @@ instance (ApproximateField q, IntervalDomain q) => Num (RealNum q) where
 
     abs = lift1 iabs
 
-    signum x = do i <- x
-                  s <- getStage
-                  return Interval { lower = app_signum s (lower i),
-                                      upper = app_signum (anti s) (upper i) }
+    signum _ = error "could diverge"
+    {- signum x = do i <- x
+                      s <- getStage
+                      return Interval { lower = app_signum s (lower i),
+                                          upper = app_signum (anti s) (upper i) --}
 
     fromInteger k = do s <- getStage
                        return Interval { lower = app_fromInteger s k,
@@ -60,9 +61,9 @@ instance (ApproximateField q, IntervalDomain q) => Num (RealNum q) where
 -- | Division and reciprocals.
 instance (ApproximateField q, IntervalDomain q) => Fractional (RealNum q) where
     (/) = lift2 idiv
-            
+
     recip = lift1 iinv
-                      
+
     fromRational r = fromInteger (numerator r) / fromInteger (denominator r)
 
 -- | The Hausdorff property
@@ -133,4 +134,3 @@ approxTo x k =
        estimate an @n@ which should give @r_n < 2^{ -n-1}@. If the estimate fails,
        we try something else. The drawback is that we might end up over-estimating
        the needed precision @n@. -}
-
