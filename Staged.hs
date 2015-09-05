@@ -34,6 +34,7 @@
 module Staged where
 
 import Control.Applicative
+import Debug.Trace
 
 -- | The rounding mode tells us whether we should under- or over-approximate the exact result.
 data RoundingMode = RoundUp | RoundDown
@@ -71,7 +72,7 @@ prec r k = Stage {precision = k, rounding = r}
    with the "limit" function.
 -}
 
-class (Functor m, Monad m) => Completion m where
+class Applicative m => Completion m where
     getStage :: m Stage -- ^ get the current stage
     getRounding :: m RoundingMode -- ^ get the current rounding
     getPrec :: m Int -- ^ get the current precision
@@ -79,29 +80,19 @@ class (Functor m, Monad m) => Completion m where
     limit :: (Stage -> t) -> m t -- ^ the element represented by a given chain
 
     embed :: t -> m t -- ^ a synonym for @return@
-    embed = return
+    embed = pure
 
     -- | lift a map from approximations to points
     lift1 :: (Stage -> t -> u) -> m t -> m u
-    lift1 f x = do a <- x
-                   s <- getStage
-                   return $ f s a
+    lift1 f = liftA2 f getStage
 
     -- | lift a map of two arguments from approximations to points.
     lift2 :: (Stage -> t -> u -> v) -> m t -> m u -> m v
-    lift2 f x y = do a <- x
-                     b <- y
-                     s <- getStage
-                     return $ f s a b
+    lift2 f = liftA3 f getStage
 
 -- | If @t@ is the type of approximations then, @Staged t@ is the type of the points of the space,
 -- represented as sequences of approximations.
 newtype Staged t = Staged { approx :: Stage -> t }
-
--- | The monad structure of 'Staged' is the same as that of the @Reader@ monad.
-instance Monad Staged where
-  return x = Staged $ const x
-  x >>= f  = Staged $ \s -> approx (f (approx x s)) s
 
 -- | The functor structure of 'Staged' is the same as that of the @Reader@ monad.
 instance Functor Staged where
@@ -110,13 +101,11 @@ instance Functor Staged where
 instance Applicative Staged where
     pure a    = Staged $ const a
     (<*>) f x = Staged $ \s -> approx f s (approx x s)
-    
 
 -- | 'Staged' is an instance of a completion.
 instance Completion Staged where
     getStage = Staged id
     getRounding = Staged rounding
     getPrec = Staged precision
-    approximate = approx
+    approximate st s = traceShow ("approximate", s) (approx st s)
     limit = Staged
-

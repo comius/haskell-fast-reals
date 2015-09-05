@@ -53,7 +53,7 @@ class IntervalDomain q  where
 {- | We define the implementation of intervals in terms of ApproximateField. -}
 
 instance ApproximateField q => IntervalDomain q where
-  iless i j = traceShow (i,j) $ upper i < lower j
+  iless i j = traceShow ("less", i,j, upper i < lower j) $ upper i < lower j
 
   imore i j = iless j i
 

@@ -35,12 +35,12 @@ instance Show Sigma where
 
 -- | A space is Hausdorff if inequality, here called 'apart', is an open relation.
 class Hausdorff t where
-  apart :: t -> t -> Sigma 
+  apart :: t -> t -> Sigma
 
 -- | A space is Discrete if equality, here called 'equal', is an open relation.
 class Discrete t where
   equal :: t -> t -> Sigma
-  
+
 -- | Suppose the type 's' represents a family of subspaces of 't'. The typical example is
 -- that 't' is the type of reals and 's' is the type of closed intervals. Then the subspaces
 -- represented by 's' are compact subspaces of 't' if the universal quantifier is a continuous

@@ -54,9 +54,9 @@ instance (ApproximateField q, IntervalDomain q) => Num (RealNum q) where
                       return Interval { lower = app_signum s (lower i),
                                           upper = app_signum (anti s) (upper i) --}
 
-    fromInteger k = do s <- getStage
-                       return (traceShow ("fi",k, s) Interval { lower = app_fromInteger s k,
-                                                                       upper = app_fromInteger (anti s) k })
+    fromInteger k = Staged $ \s ->
+                     (traceShow ("fi",k, s) Interval { lower = app_fromInteger s k,
+                                                              upper = app_fromInteger (anti s) k })
 
 -- | Division and reciprocals.
 instance (ApproximateField q, IntervalDomain q) => Fractional (RealNum q) where
@@ -64,9 +64,9 @@ instance (ApproximateField q, IntervalDomain q) => Fractional (RealNum q) where
 
     recip = lift1 iinv
 
-    fromRational r = do s <- getStage
-                        return (traceShow ("fr",r, s) Interval { lower = app_fromRational s r,
-                                                                      upper = app_fromRational (anti s) r})
+    fromRational r = Staged $ \s ->
+                                (traceShow ("fr",r, s) Interval { lower = app_fromRational s r,
+                                                                             upper = app_fromRational (anti s) r})
 
 
 -- | The Hausdorff property
@@ -86,7 +86,7 @@ instance (ApproximateField q, IntervalDomain q) => Compact (ClosedInterval q) (R
                                  RoundDown -> Interval {lower = u, upper = v}
                                  RoundUp   -> let w = midpoint u v in Interval {lower = w, upper = w}
            sweep [] = True
-           sweep ((k,a,b):lst) = let x = return $ test_interval a b
+           sweep ((k,a,b):lst) = let x = Staged $ \s -> test_interval a b
                                     in case (r, approximate (p x) (prec r k)) of
                                       (RoundDown, False) -> (k < n) &&
                                                             (let c = midpoint a b in sweep (lst ++ [(k+1,a,c), (k+1,c,b)]))
