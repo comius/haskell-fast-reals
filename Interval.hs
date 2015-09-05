@@ -11,6 +11,8 @@ module Interval where
 
 import Staged
 import ApproximateField
+import Debug.Trace
+
 
 {- | An interval is represented by a lower and upper endpoint. We do
   /not/ require that the lower endpoint be smaller or equal to the
@@ -51,7 +53,7 @@ class IntervalDomain q  where
 {- | We define the implementation of intervals in terms of ApproximateField. -}
 
 instance ApproximateField q => IntervalDomain q where
-  iless i j = upper i < lower j
+  iless i j = traceShow (i,j) $ upper i < lower j
 
   imore i j = iless j i
 
@@ -66,52 +68,52 @@ instance ApproximateField q => IntervalDomain q where
     let negative q = q < zero
         lmul = app_mul s
         umul = app_mul (anti s)
-    in Interval { lower = if negative a
-                           then if negative b
-                                then if negative d
-                                     then lmul b d
-                                     else lmul a d
-                                else if negative c
-                                     then if negative d
-                                          then lmul b c
-                                          else min (lmul a d) (lmul b c)
-                                     else if negative d
-                                          then zero
-                                          else lmul a d
-                           else if negative b
-                                then if negative c
-                                     then if negative d
-                                          then lmul b d
-                                          else zero
-                                     else if negative d
-                                          then max (lmul a c) (lmul b d)
-                                          else lmul a c
-                           else if negative c
-                                then lmul b c
-                                else lmul a c,
-                  upper = if negative a
-                           then if negative b
-                                then if negative c
-                                     then umul a c
-                                     else umul b c
-                                else if negative c
-                                     then if negative d
-                                          then umul a c
-                                          else max (umul a c) (umul b d)
-                                     else if negative d
-                                          then zero
-                                          else umul b d
-                           else if negative b
-                                then if negative c
-                                     then if negative d
-                                          then umul a d
-                                          else zero
-                                     else if negative d
-                                          then min (umul a d) (umul b c)
-                                          else umul b c
-                                else if negative d
-                                     then umul a d
-                                     else umul b d}
+    in traceShow s Interval { lower = if negative a
+                                       then if negative b
+                                            then if negative d
+                                                 then lmul b d
+                                                 else lmul a d
+                                            else if negative c
+                                                 then if negative d
+                                                      then lmul b c
+                                                      else min (lmul a d) (lmul b c)
+                                                 else if negative d
+                                                      then zero
+                                                      else lmul a d
+                                       else if negative b
+                                            then if negative c
+                                                 then if negative d
+                                                      then lmul b d
+                                                      else zero
+                                                 else if negative d
+                                                      then max (lmul a c) (lmul b d)
+                                                      else lmul a c
+                                       else if negative c
+                                            then lmul b c
+                                            else lmul a c,
+                              upper = if negative a
+                                       then if negative b
+                                            then if negative c
+                                                 then umul a c
+                                                 else umul b c
+                                            else if negative c
+                                                 then if negative d
+                                                      then umul a c
+                                                      else max (umul a c) (umul b d)
+                                                 else if negative d
+                                                      then zero
+                                                      else umul b d
+                                       else if negative b
+                                            then if negative c
+                                                 then if negative d
+                                                      then umul a d
+                                                      else zero
+                                                 else if negative d
+                                                      then min (umul a d) (umul b c)
+                                                      else umul b c
+                                            else if negative d
+                                                 then umul a d
+                                                 else umul b d}
 
   iinv s Interval{lower=a, upper=b} =
     let sgn q = compare q zero

@@ -6,7 +6,6 @@ module ApproximateField (
 ) where
 
 import Staged
-
 {- | An approximate field is a structure in which we can perform approximate
 arithmetical operations. The typical example is the ring of dyadic rational
 numbers: division of dyadic rationals is only approximate, and even though the
@@ -43,4 +42,5 @@ class (Show q, Ord q) => ApproximateField q where
 --  app_abs :: Stage -> q -> q
 --  app_signum :: Stage -> q -> q
   app_fromInteger :: Stage -> Integer -> q
+  app_fromRational :: Stage -> Rational -> q
   app_shift :: Stage -> q -> Int -> q -- ^ shift by a power of 2

@@ -6,12 +6,12 @@
 
 module Reals where
 
-import Data.Ratio
-import Staged
-import Space
 import ApproximateField
+import Debug.Trace
+import Data.Ratio
 import Interval
-
+import Space
+import Staged
 
 -- | A real number is implemented as a staged dyadic interval @'Interval' q@ where @q@ is the
 -- underlying approximate field (in practiec these are dyadic rationals). @'RealNum' q@ can be used
@@ -55,8 +55,8 @@ instance (ApproximateField q, IntervalDomain q) => Num (RealNum q) where
                                           upper = app_signum (anti s) (upper i) --}
 
     fromInteger k = do s <- getStage
-                       return Interval { lower = app_fromInteger s k,
-                                           upper = app_fromInteger (anti s) k }
+                       return (traceShow ("fi",k, s) Interval { lower = app_fromInteger s k,
+                                                                       upper = app_fromInteger (anti s) k })
 
 -- | Division and reciprocals.
 instance (ApproximateField q, IntervalDomain q) => Fractional (RealNum q) where
@@ -64,7 +64,10 @@ instance (ApproximateField q, IntervalDomain q) => Fractional (RealNum q) where
 
     recip = lift1 iinv
 
-    fromRational r = fromInteger (numerator r) / fromInteger (denominator r)
+    fromRational r = do s <- getStage
+                        return (traceShow ("fr",r, s) Interval { lower = app_fromRational s r,
+                                                                      upper = app_fromRational (anti s) r})
+
 
 -- | The Hausdorff property
 instance IntervalDomain q => Hausdorff (RealNum q) where

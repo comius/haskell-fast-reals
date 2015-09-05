@@ -87,6 +87,7 @@ instance ApproximateField Rounded where
 	Just i -> fromInt (rnd s) (prec s) i
 -}
   app_fromInteger s = fromIntegerA (rnd s) (prec s)
+  app_fromRational s = fromRationalA (rnd s) (prec s)
 
   app_inv s a = div (rnd s) (prec s) (fromIntegerA Near 2 1) a
 {-  app_inv s NaN = normalize s NaN
