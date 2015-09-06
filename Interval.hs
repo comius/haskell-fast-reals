@@ -10,8 +10,6 @@
 module Interval (
   IntervalDomain (..),
   Interval (..),
-  lower,
-  upper,
   split
 ) where
 
@@ -41,25 +39,25 @@ instance ApproximateField q => Show (Interval q) where
     then show a
     else "[" ++ show a ++ "," ++ show b ++ "]"
 
-class IntervalDomain q  where
-  iless :: Interval q -> Interval q -> Bool
-  imore :: Interval q -> Interval q -> Bool
-  iadd :: Stage -> Interval q -> Interval q -> Interval q
-  isub :: Stage -> Interval q -> Interval q -> Interval q
-  imul :: Stage -> Interval q -> Interval q -> Interval q
-  iinv :: Stage -> Interval q -> Interval q
-  idiv :: Stage -> Interval q -> Interval q -> Interval q
-  iabs :: Stage -> Interval q -> Interval q
---  inormalize :: Stage -> Interval q -> Interval q
---  embed :: Stage -> q -> Interval q
---  split :: Interval q -> (Interval q, Interval q)
-  -- width :: Interval q -> q
-  iFromInteger :: Stage -> Integer -> Interval q
-  iFromRational :: Stage -> Rational -> Interval q
+class IntervalDomain i  where
+  iless :: i -> i -> Bool
+  imore :: i -> i -> Bool
+  iadd :: Stage -> i -> i -> i
+  isub :: Stage -> i -> i -> i
+  imul :: Stage -> i -> i -> i
+  iinv :: Stage -> i -> i
+  idiv :: Stage -> i -> i -> i
+  iabs :: Stage -> i -> i
+--  inormalize :: Stage -> i -> i
+--  embed :: Stage -> q -> i
+--  split :: i -> (i, i)
+  -- width :: i -> q
+  iFromInteger :: Stage -> Integer -> i
+  iFromRational :: Stage -> Rational -> i
 
 {- | We define the implementation of intervals in terms of ApproximateField. -}
 
-instance ApproximateField q => IntervalDomain q where
+instance ApproximateField q => IntervalDomain (Interval q) where
   iless i j = traceShow ("less", i,j, upper i < lower j) $ upper i < lower j
 
   imore i j = iless j i

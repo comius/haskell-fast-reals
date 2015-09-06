@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances, MultiParamTypeClasses, FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts, TypeSynonymInstances, MultiParamTypeClasses, FlexibleInstances #-}
 
 {- | We implement real numbers as the completion of dyadic intervals. The whole construction is
    parametrized by an approximate field, an example of which is "Dyadic".
@@ -26,22 +26,22 @@ instance ApproximateField q => Show (RealNum q) where
             in show i
 
 -- | Linear order on real numbers
-instance IntervalDomain q => LinearOrder (RealNum q) where
+instance IntervalDomain (Interval q) => LinearOrder (RealNum q) where
     less = lift2 (const iless)
 
 -- | It is a bad idea to use Haskell-style inequality @/=@ on reals because it either returns @True@
 -- or it diverges. Similarly, using Haskell equality @==@ is bad. Nevertheless, we define @==@ and @/=@
 -- because Haskell wants them for numeric types.
-instance IntervalDomain q => Eq (RealNum q) where
+instance IntervalDomain (Interval q) => Eq (RealNum q) where
     x /= y = force $ x `apart` y
 
 -- | Real numbers are an ordered type in the sense of Haskells 'Ord', although a comparison never
 -- returns @EQ@ (instead it diverges). This is a fact of life, comparison of reals is not decidable.
-instance IntervalDomain q => Ord (RealNum q) where
+instance IntervalDomain (Interval q) => Ord (RealNum q) where
   compare x y = if force (x `less` y) then LT else GT
 
 -- | The ring structure fo the reals.
-instance (ApproximateField q, IntervalDomain q) => Num (RealNum q) where
+instance (ApproximateField q, IntervalDomain (Interval q)) => Num (RealNum q) where
     (+) = lift2 iadd
     (-) = lift2 isub
     (*) = lift2 imul
@@ -58,7 +58,7 @@ instance (ApproximateField q, IntervalDomain q) => Num (RealNum q) where
                      (traceShow ("fi",k, s) iFromInteger s k)
 
 -- | Division and reciprocals.
-instance (ApproximateField q, IntervalDomain q) => Fractional (RealNum q) where
+instance (ApproximateField q, IntervalDomain (Interval q)) => Fractional (RealNum q) where
     (/) = lift2 idiv
 
     recip = lift1 iinv
@@ -68,14 +68,14 @@ instance (ApproximateField q, IntervalDomain q) => Fractional (RealNum q) where
 
 
 -- | The Hausdorff property
-instance IntervalDomain q => Hausdorff (RealNum q) where
+instance IntervalDomain (Interval q) => Hausdorff (RealNum q) where
      x `apart` y = (x `less` y) `sor` (y `less` x)
 
 -- | The value @ClosedInterval(a,b)@ represents the closed interval [a,b] as a subspace of the reals.
 newtype ClosedInterval q = ClosedInterval (q, q)
 
 -- | Compactness of the closed interval
-instance (ApproximateField q, IntervalDomain q, Midpoint q) => Compact (ClosedInterval q) (RealNum q) where
+instance (ApproximateField q, IntervalDomain (Interval q), Midpoint q) => Compact (ClosedInterval q) (RealNum q) where
    forall (ClosedInterval(a,b)) p =
      limit (\s ->
        let r = rounding s
