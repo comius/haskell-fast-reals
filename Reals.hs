@@ -27,7 +27,7 @@ instance ApproximateField q => Show (RealNum q) where
 
 -- | Linear order on real numbers
 instance IntervalDomain (Interval q) => LinearOrder (RealNum q) where
-    less = lift2 (const iless)
+    less = lift2 (const (<))
 
 -- | It is a bad idea to use Haskell-style inequality @/=@ on reals because it either returns @True@
 -- or it diverges. Similarly, using Haskell equality @==@ is bad. Nevertheless, we define @==@ and @/=@

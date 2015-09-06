@@ -32,16 +32,15 @@ import Debug.Trace
   multiplication then. -}
 
 data Interval q = Interval { lower :: q, upper :: q }
+  deriving Eq
 
-instance ApproximateField q => Show (Interval q) where
+instance (Show q, Eq q) => Show (Interval q) where
   show Interval{lower=a, upper=b} =
     if a == b
     then show a
     else "[" ++ show a ++ "," ++ show b ++ "]"
 
-class IntervalDomain i  where
-  iless :: i -> i -> Bool
-  imore :: i -> i -> Bool
+class Ord i => IntervalDomain i  where
   iadd :: Stage -> i -> i -> i
   isub :: Stage -> i -> i -> i
   imul :: Stage -> i -> i -> i
@@ -57,11 +56,14 @@ class IntervalDomain i  where
 
 {- | We define the implementation of intervals in terms of ApproximateField. -}
 
+
+instance Ord q => Ord (Interval q) where
+  i < j = upper i < lower j
+  i > j = j < i
+  i <= j = upper i <= lower j
+
+
 instance ApproximateField q => IntervalDomain (Interval q) where
-  iless i j = traceShow ("less", i,j, upper i < lower j) $ upper i < lower j
-
-  imore i j = iless j i
-
   iadd s a b = Interval { lower = app_add s (lower a) (lower b),
                           upper = app_add (anti s) (upper a) (upper b)}
 
