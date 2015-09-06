@@ -114,7 +114,7 @@ instance ApproximateField Rounded where
       else Dyadic {mant = r + (shiftL 1 e * m1) `div` m2, expo = e1 - e2 - e}
   app_div s _ _ = normalize s NaN -- can we do better than this in other cases?
 -}
-  app_shift s = mul2i (rnd s) (prec s)
+--  app_shift s = mul2i (rnd s) (prec s)
 {-  app_shift s NaN k = normalize s NaN
   app_shift s PositiveInfinity k = PositiveInfinity
   app_shift s NegativeInfinity k = NegativeInfinity

@@ -45,10 +45,11 @@ class IntervalDomain q  where
   idiv :: Stage -> Interval q -> Interval q -> Interval q
   iabs :: Stage -> Interval q -> Interval q
 --  inormalize :: Stage -> Interval q -> Interval q
-  embed :: Stage -> q -> Interval q
+--  embed :: Stage -> q -> Interval q
   split :: Interval q -> (Interval q, Interval q)
   -- width :: Interval q -> q
-
+  iFromInteger :: Stage -> Integer -> Interval q
+  iFromRational :: Stage -> Rational -> Interval q
 
 {- | We define the implementation of intervals in terms of ApproximateField. -}
 
@@ -145,12 +146,17 @@ instance ApproximateField q => IntervalDomain q where
 --  inormalize s a = Interval { lower = normalize s (lower a),
 --                              upper = normalize (anti s) (upper a) }
 
-  embed s q = Interval { lower = q, upper = q }
+--  embed s q = Interval { lower = q, upper = q }
 
   iabs s a = Interval { lower = app_fromInteger s 0,
                         upper = let q = app_negate s (lower a)
                                     r = upper a
                                 in if q < r then r else q }
+  iFromInteger s k = Interval { lower = app_fromInteger s k,
+                                upper = app_fromInteger (anti s) k }
+
+  iFromRational s r =  Interval { lower = app_fromRational s r,
+                                  upper = app_fromRational (anti s) r}
 
   split Interval{lower=a, upper=b} =
     let c = midpoint a b

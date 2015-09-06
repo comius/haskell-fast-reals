@@ -55,8 +55,7 @@ instance (ApproximateField q, IntervalDomain q) => Num (RealNum q) where
                                           upper = app_signum (anti s) (upper i) --}
 
     fromInteger k = Staged $ \s ->
-                     (traceShow ("fi",k, s) Interval { lower = app_fromInteger s k,
-                                                              upper = app_fromInteger (anti s) k })
+                     (traceShow ("fi",k, s) iFromInteger s k)
 
 -- | Division and reciprocals.
 instance (ApproximateField q, IntervalDomain q) => Fractional (RealNum q) where
@@ -65,8 +64,7 @@ instance (ApproximateField q, IntervalDomain q) => Fractional (RealNum q) where
     recip = lift1 iinv
 
     fromRational r = Staged $ \s ->
-                                (traceShow ("fr",r, s) Interval { lower = app_fromRational s r,
-                                                                             upper = app_fromRational (anti s) r})
+                                (traceShow ("fr",r, s) iFromRational s r)
 
 
 -- | The Hausdorff property

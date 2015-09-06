@@ -43,4 +43,4 @@ class (Show q, Ord q) => ApproximateField q where
 --  app_signum :: Stage -> q -> q
   app_fromInteger :: Stage -> Integer -> q
   app_fromRational :: Stage -> Rational -> q
-  app_shift :: Stage -> q -> Int -> q -- ^ shift by a power of 2
+--  app_shift :: Stage -> q -> Int -> q -- ^ shift by a power of 2
