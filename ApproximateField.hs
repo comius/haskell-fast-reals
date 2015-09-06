@@ -2,7 +2,8 @@
 -}
 
 module ApproximateField (
-  ApproximateField(..),
+  ApproximateField (..),
+  Midpoint (..)
 ) where
 
 import Staged
@@ -24,8 +25,6 @@ class (Show q, Ord q) => ApproximateField q where
 --  size :: q -> Int -- ^ the size of the number (memory usage)
 --  log2 :: q -> Int -- ^ @log2 q@ is a number @k@ such that @2^k <= abs q <= 2^(k+1)@.
 
-  midpoint :: q -> q -> q -- ^ exact midpoint
-
   zero :: q
   positive_inf :: q
   negative_inf :: q
@@ -44,3 +43,6 @@ class (Show q, Ord q) => ApproximateField q where
   app_fromInteger :: Stage -> Integer -> q
   app_fromRational :: Stage -> Rational -> q
 --  app_shift :: Stage -> q -> Int -> q -- ^ shift by a power of 2
+
+class Midpoint q where
+  midpoint :: q -> q -> q -- ^ exact midpoint

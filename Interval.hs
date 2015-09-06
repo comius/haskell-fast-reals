@@ -7,7 +7,13 @@
   domains is defined in the module "Reals".
 -}
 
-module Interval where
+module Interval (
+  IntervalDomain (..),
+  Interval (..),
+  lower,
+  upper,
+  split
+) where
 
 import Staged
 import ApproximateField
@@ -46,7 +52,7 @@ class IntervalDomain q  where
   iabs :: Stage -> Interval q -> Interval q
 --  inormalize :: Stage -> Interval q -> Interval q
 --  embed :: Stage -> q -> Interval q
-  split :: Interval q -> (Interval q, Interval q)
+--  split :: Interval q -> (Interval q, Interval q)
   -- width :: Interval q -> q
   iFromInteger :: Stage -> Integer -> Interval q
   iFromRational :: Stage -> Rational -> Interval q
@@ -158,6 +164,7 @@ instance ApproximateField q => IntervalDomain q where
   iFromRational s r =  Interval { lower = app_fromRational s r,
                                   upper = app_fromRational (anti s) r}
 
-  split Interval{lower=a, upper=b} =
+split :: Midpoint q => Interval q -> (Interval q, Interval q)
+split Interval{lower=a, upper=b} =
     let c = midpoint a b
     in (Interval {lower=a, upper=c}, Interval {lower=c, upper=b})

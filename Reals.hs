@@ -23,7 +23,7 @@ type RealNum q = Staged (Interval q)
 -- and shows it as an interval, together with a floating point approximation.
 instance ApproximateField q => Show (RealNum q) where
    show x = let i = approximate x (prec RoundDown 20)
-            in show i ++ " " ++ show (midpoint (lower i) (upper i))
+            in show i
 
 -- | Linear order on real numbers
 instance IntervalDomain q => LinearOrder (RealNum q) where
@@ -75,7 +75,7 @@ instance IntervalDomain q => Hausdorff (RealNum q) where
 newtype ClosedInterval q = ClosedInterval (q, q)
 
 -- | Compactness of the closed interval
-instance (ApproximateField q, IntervalDomain q) => Compact (ClosedInterval q) (RealNum q) where
+instance (ApproximateField q, IntervalDomain q, Midpoint q) => Compact (ClosedInterval q) (RealNum q) where
    forall (ClosedInterval(a,b)) p =
      limit (\s ->
        let r = rounding s

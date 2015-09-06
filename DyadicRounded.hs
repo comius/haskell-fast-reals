@@ -4,7 +4,9 @@
    a fast arbitrary-precision floating-point library MPFR via haskel module Data.Rounded
 -}
 
-module DyadicRounded (exact) where
+module DyadicRounded (
+  exact
+) where
 
 import Prelude hiding (isNaN,isInfinite, div)
 --import Data.Number.MPFR hiding (less)
@@ -53,30 +55,7 @@ instance ApproximateField Rounded where
   positive_inf = posInf
   negative_inf = negInf
 
---  toFloat = toDouble Near
 
---  midpoint a b | isNaN a = a
---  midpoint a b | isNaN b = b
---  midpoint a b | isInfinite a && isInfinite b && a == b = a
---  midpoint a b | isInfinite a && isInfinite b = Data.Number.Rounded.zero
-  midpoint a b = mul2i Near p (add Near p a b) (-1)
-           where p = 1 + maxPrec a b
-                 maxPrec a b = max (Data.Number.Rounded.getPrec a) (Data.Number.Rounded.getPrec b)
-
-{-  midpoint NaN _ = NaN
-  midpoint _ NaN = NaN
-  midpoint NegativeInfinity NegativeInfinity = NegativeInfinity
-  midpoint NegativeInfinity PositiveInfinity = zero
-  midpoint NegativeInfinity Dyadic{mant=m, expo=e} = Dyadic {mant = -1 - abs m, expo= 2 * max 1 e}
-  midpoint PositiveInfinity NegativeInfinity = zero
-  midpoint PositiveInfinity PositiveInfinity = PositiveInfinity
-  midpoint PositiveInfinity Dyadic{mant=m, expo=e} = Dyadic {mant = 1 + abs m, expo= 2 * max 1 e}
-  midpoint Dyadic{mant=m,expo=e} NegativeInfinity = Dyadic {mant = -1 - abs m, expo= 2 * max 1 e}
-  midpoint Dyadic{mant=m,expo=e} PositiveInfinity = Dyadic {mant = 1 + abs m, expo= 2 * max 1 e}
-  midpoint Dyadic{mant=m1,expo=e1} Dyadic{mant=m2,expo=e2} = Dyadic {mant = m3, expo = e3 - 1}
-    where m3 = if e1 < e2 then m1 + shiftL m2 (e2 - e1) else shiftL m1 (e1 - e2) + m2
-          e3 = min e1 e2
--}
   app_add s = add (rnd s) (prec s)
   app_sub s = sub (rnd s) (prec s)
   app_mul s = mul (rnd s) (prec s)
@@ -119,6 +98,32 @@ instance ApproximateField Rounded where
   app_shift s PositiveInfinity k = PositiveInfinity
   app_shift s NegativeInfinity k = NegativeInfinity
   app_shift s Dyadic {mant=m, expo=e} k = normalize s (Dyadic {mant = m, expo = e + k})
+-}
+
+instance Midpoint Rounded where
+--  toFloat = toDouble Near
+
+--  midpoint a b | isNaN a = a
+--  midpoint a b | isNaN b = b
+--  midpoint a b | isInfinite a && isInfinite b && a == b = a
+--  midpoint a b | isInfinite a && isInfinite b = Data.Number.Rounded.zero
+  midpoint a b = mul2i Near p (add Near p a b) (-1)
+           where p = 1 + maxPrec a b
+                 maxPrec a b = max (Data.Number.Rounded.getPrec a) (Data.Number.Rounded.getPrec b)
+
+{-  midpoint NaN _ = NaN
+  midpoint _ NaN = NaN
+  midpoint NegativeInfinity NegativeInfinity = NegativeInfinity
+  midpoint NegativeInfinity PositiveInfinity = zero
+  midpoint NegativeInfinity Dyadic{mant=m, expo=e} = Dyadic {mant = -1 - abs m, expo= 2 * max 1 e}
+  midpoint PositiveInfinity NegativeInfinity = zero
+  midpoint PositiveInfinity PositiveInfinity = PositiveInfinity
+  midpoint PositiveInfinity Dyadic{mant=m, expo=e} = Dyadic {mant = 1 + abs m, expo= 2 * max 1 e}
+  midpoint Dyadic{mant=m,expo=e} NegativeInfinity = Dyadic {mant = -1 - abs m, expo= 2 * max 1 e}
+  midpoint Dyadic{mant=m,expo=e} PositiveInfinity = Dyadic {mant = 1 + abs m, expo= 2 * max 1 e}
+  midpoint Dyadic{mant=m1,expo=e1} Dyadic{mant=m2,expo=e2} = Dyadic {mant = m3, expo = e3 - 1}
+    where m3 = if e1 < e2 then m1 + shiftL m2 (e2 - e1) else shiftL m1 (e1 - e2) + m2
+          e3 = min e1 e2
 -}
 
 -- | This is a convenience function which allows us to write @exact 1.3@ as a
