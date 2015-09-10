@@ -26,27 +26,27 @@ instance ApproximateField q => Show (RealNum q) where
             in show i
 
 -- | Linear order on real numbers
-instance IntervalDomain (Interval q) => LinearOrder (RealNum q) where
+instance Ord (Interval q) => LinearOrder (RealNum q) where
     less = lift2 (const (<))
 
 -- | It is a bad idea to use Haskell-style inequality @/=@ on reals because it either returns @True@
 -- or it diverges. Similarly, using Haskell equality @==@ is bad. Nevertheless, we define @==@ and @/=@
 -- because Haskell wants them for numeric types.
-instance IntervalDomain (Interval q) => Eq (RealNum q) where
+instance Ord (Interval q) => Eq (RealNum q) where
     x /= y = force $ x `apart` y
 
 -- | Real numbers are an ordered type in the sense of Haskells 'Ord', although a comparison never
 -- returns @EQ@ (instead it diverges). This is a fact of life, comparison of reals is not decidable.
-instance IntervalDomain (Interval q) => Ord (RealNum q) where
+instance Ord (Interval q) => Ord (RealNum q) where
   compare x y = if force (x `less` y) then LT else GT
 
 -- | The ring structure fo the reals.
-instance (ApproximateField q, IntervalDomain (Interval q)) => Num (RealNum q) where
-    (+) = lift2 iadd
-    (-) = lift2 isub
-    (*) = lift2 imul
+instance (ApproximateField (Interval q)) => Num (RealNum q) where
+    (+) = lift2 app_add
+    (-) = lift2 app_sub
+    (*) = lift2 app_mul
 
-    abs = lift1 iabs
+--    abs = lift1 app_abs
 
     signum _ = error "could diverge"
     {- signum x = do i <- x
@@ -55,27 +55,27 @@ instance (ApproximateField q, IntervalDomain (Interval q)) => Num (RealNum q) wh
                                           upper = app_signum (anti s) (upper i) --}
 
     fromInteger k = Staged $ \s ->
-                     (traceShow ("fi",k, s) iFromInteger s k)
+                     (traceShow ("fi",k, s) app_fromInteger s k)
 
 -- | Division and reciprocals.
-instance (ApproximateField q, IntervalDomain (Interval q)) => Fractional (RealNum q) where
-    (/) = lift2 idiv
+instance (ApproximateField (Interval q)) => Fractional (RealNum q) where
+    (/) = lift2 app_div
 
-    recip = lift1 iinv
+    recip = lift1 app_inv
 
     fromRational r = Staged $ \s ->
-                                (traceShow ("fr",r, s) iFromRational s r)
+                                (traceShow ("fr",r, s) app_fromRational s r)
 
 
 -- | The Hausdorff property
-instance IntervalDomain (Interval q) => Hausdorff (RealNum q) where
+instance Ord (Interval q) => Hausdorff (RealNum q) where
      x `apart` y = (x `less` y) `sor` (y `less` x)
 
 -- | The value @ClosedInterval(a,b)@ represents the closed interval [a,b] as a subspace of the reals.
 newtype ClosedInterval q = ClosedInterval (q, q)
 
 -- | Compactness of the closed interval
-instance (ApproximateField q, IntervalDomain (Interval q), Midpoint q) => Compact (ClosedInterval q) (RealNum q) where
+instance (Midpoint q) => Compact (ClosedInterval q) (RealNum q) where
    forall (ClosedInterval(a,b)) p =
      limit (\s ->
        let r = rounding s
@@ -96,14 +96,14 @@ instance (ApproximateField q, IntervalDomain (Interval q), Midpoint q) => Compac
      )
 
 -- | Missing: overtness of reals, open interval (a,b) and closed interval [a,b]
-instance IntervalDomain q => Overt (ClosedInterval q) (RealNum q) where
+instance Overt (ClosedInterval q) (RealNum q) where
      exists (ClosedInterval (a,b)) p = error "Not implemented"
 
 -- | Reals form a complete space, which means that every Cauchy sequence of reals has
 -- a limit. In the implementation this is manifested by the existence of an operator
 -- which computes the limit of a Cauchy sequence. The error bounds for the sequence are
 -- given explicitly.
-lim :: IntervalDomain q => (Int -> (RealNum q, q)) -> RealNum q
+lim :: (Int -> (RealNum q, q)) -> RealNum q
 lim x =
     error "Limits of Cauchy sequences are not implemented"
     {- there are several ways to implement 'lim', see the end of Section 7 of
@@ -119,7 +119,7 @@ lim x =
 -- that we can compute arbitrarily good @q@-approximations to real numbers. The
 -- function 'approxTo x k' computes an approximation @a@ of type @q@ which is within
 -- @2^-k@ of @x@.
-approxTo :: IntervalDomain q => RealNum q -> Int -> q
+approxTo :: RealNum q -> Int -> q
 approxTo x k =
     error "approxTo not implemented"
     {- the simplest way to implement approxTo is to keep calling

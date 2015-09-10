@@ -8,7 +8,6 @@
 -}
 
 module Interval (
-  IntervalDomain (..),
   Interval (..),
   split
 ) where
@@ -40,22 +39,8 @@ instance (Show q, Eq q) => Show (Interval q) where
     then show a
     else "[" ++ show a ++ "," ++ show b ++ "]"
 
-class Ord i => IntervalDomain i  where
-  iadd :: Stage -> i -> i -> i
-  isub :: Stage -> i -> i -> i
-  imul :: Stage -> i -> i -> i
-  iinv :: Stage -> i -> i
-  idiv :: Stage -> i -> i -> i
-  iabs :: Stage -> i -> i
---  inormalize :: Stage -> i -> i
---  embed :: Stage -> q -> i
---  split :: i -> (i, i)
-  -- width :: i -> q
-  iFromInteger :: Stage -> Integer -> i
-  iFromRational :: Stage -> Rational -> i
 
 {- | We define the implementation of intervals in terms of ApproximateField. -}
-
 
 instance Ord q => Ord (Interval q) where
   i < j = upper i < lower j
@@ -63,15 +48,15 @@ instance Ord q => Ord (Interval q) where
   i <= j = upper i <= lower j
 
 
-instance ApproximateField q => IntervalDomain (Interval q) where
-  iadd s a b = Interval { lower = app_add s (lower a) (lower b),
-                          upper = app_add (anti s) (upper a) (upper b)}
+instance ApproximateField q => ApproximateField (Interval q) where
+  app_add s a b = Interval { lower = app_add s (lower a) (lower b),
+                             upper = app_add (anti s) (upper a) (upper b)}
 
-  isub s a b = Interval { lower = app_sub s (lower a) (upper b),
-                          upper = app_sub (anti s) (upper a) (lower b)}
+  app_sub s a b = Interval { lower = app_sub s (lower a) (upper b),
+                             upper = app_sub (anti s) (upper a) (lower b)}
 
   -- Kaucher multiplication
-  imul s Interval{lower=a,upper=b} Interval{lower=c,upper=d} =
+  app_mul s Interval{lower=a,upper=b} Interval{lower=c,upper=d} =
     let negative q = q < zero
         lmul = app_mul s
         umul = app_mul (anti s)
@@ -122,7 +107,7 @@ instance ApproximateField q => IntervalDomain (Interval q) where
                                                  then umul a d
                                                  else umul b d}
 
-  iinv s Interval{lower=a, upper=b} =
+  app_inv s Interval{lower=a, upper=b} =
     let sgn q = compare q zero
         linv = app_inv s
         uinv = app_inv (anti s)
@@ -147,24 +132,30 @@ instance ApproximateField q => IntervalDomain (Interval q) where
                              (EQ, GT) -> positive_inf
                              (GT, GT) -> uinv a}
 
-  idiv s a b = imul s a (iinv s b)
+  app_div s a b = app_mul s a (app_inv s b)
 
 --  inormalize s a = Interval { lower = normalize s (lower a),
 --                              upper = normalize (anti s) (upper a) }
 
 --  embed s q = Interval { lower = q, upper = q }
 
-  iabs s a = Interval { lower = app_fromInteger s 0,
-                        upper = let q = app_negate s (lower a)
-                                    r = upper a
-                                in if q < r then r else q }
-  iFromInteger s k = Interval { lower = app_fromInteger s k,
-                                upper = app_fromInteger (anti s) k }
+--  iabs s a = Interval { lower = app_fromInteger s 0,
+--                        upper = let q = app_negate s (lower a)
+--                                    r = upper a
+--                                in if q < r then r else q }
+  app_fromInteger s k = Interval { lower = app_fromInteger s k,
+                                   upper = app_fromInteger (anti s) k }
 
-  iFromRational s r =  Interval { lower = app_fromRational s r,
-                                  upper = app_fromRational (anti s) r}
+  app_fromRational s r =  Interval { lower = app_fromRational s r,
+                                                      upper = app_fromRational (anti s) r}
 
 split :: Midpoint q => Interval q -> (Interval q, Interval q)
 split Interval{lower=a, upper=b} =
     let c = midpoint a b
     in (Interval {lower=a, upper=c}, Interval {lower=c, upper=b})
+
+
+--  inormalize :: Stage -> i -> i
+--  embed :: Stage -> q -> i
+--  split :: i -> (i, i)
+-- width :: i -> q
