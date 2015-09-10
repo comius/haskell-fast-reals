@@ -4,7 +4,9 @@
    parametrized by an approximate field, an example of which is "Dyadic".
 -}
 
-module Reals where
+module Reals (
+             RealNum
+) where
 
 import ApproximateField
 import Debug.Trace

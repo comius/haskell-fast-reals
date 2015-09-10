@@ -9,10 +9,8 @@ module DyadicRounded (
 ) where
 
 import Prelude hiding (isNaN,isInfinite, div)
---import Data.Number.MPFR hiding (less)
 import Data.Number.Rounded
-import Staged hiding (prec)
-import ApproximateField
+import ApproximateField hiding (prec)
 import Interval
 import Reals
 

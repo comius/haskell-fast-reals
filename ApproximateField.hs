@@ -2,11 +2,45 @@
 -}
 
 module ApproximateField (
-  ApproximateField (..),
-  Midpoint (..)
+       RoundingMode (..),
+       Stage (..),
+       anti,
+       precDown,
+       precUp,
+       prec,
+       ApproximateField (..),
+       Midpoint (..)
 ) where
 
-import Staged
+-- | The rounding mode tells us whether we should under- or over-approximate the exact result.
+data RoundingMode = RoundUp | RoundDown
+                  deriving (Eq, Show)
+
+-- | A stage of computation tells us how hard we should try to compute the result. The 'stage' component
+-- is a measure of precisions. As it goes to infinity, the approximation should converge to the exact
+-- value (in the sense of Scott topology on the underlying domain model).
+data Stage = Stage { precision :: Int, rounding :: RoundingMode }
+             deriving Show
+
+-- | 'anti' reverses the rounding mode
+anti :: Stage -> Stage
+anti s = Stage {precision = precision s, rounding = case rounding s of { RoundUp -> RoundDown ; RoundDown -> RoundUp}}
+
+-- | @precDown k@ sets precision to @k@ and the rounding mode to 'RoundDown'
+precDown :: Int -> Stage
+precDown k = Stage {precision = k, rounding = RoundDown}
+
+-- | @precUp k@ sets precision to @k@ and the rounding mode to 'RoundUp'
+precUp :: Int -> Stage
+precUp k = Stage {precision = k, rounding = RoundUp}
+
+-- | @prec r k@ is the stage with given rounding @r@ and precision @k@
+prec :: RoundingMode -> Int -> Stage
+prec r k = Stage {precision = k, rounding = r}
+
+
+
+
 {- | An approximate field is a structure in which we can perform approximate
 arithmetical operations. The typical example is the ring of dyadic rational
 numbers: division of dyadic rationals is only approximate, and even though the

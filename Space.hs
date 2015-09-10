@@ -2,7 +2,14 @@
 
 -- | Basic definitions od spaces and their properties
 
-module Space where
+module Space (
+             sor, sand, force,
+             Hausdorff  (..),
+             Discrete (..),
+             Compact (..),
+             Overt (..),
+             LinearOrder (..)
+) where
 
 import Staged
 
