@@ -58,6 +58,7 @@ class (Show q, Ord q) => ApproximateField q where
 --  normalize :: Stage -> q -> q
 --  size :: q -> Int -- ^ the size of the number (memory usage)
 --  log2 :: q -> Int -- ^ @log2 q@ is a number @k@ such that @2^k <= abs q <= 2^(k+1)@.
+  app_prec :: q -> Int
 
   zero :: q
   positive_inf :: q

@@ -94,3 +94,32 @@ instance Completion Staged where
     getPrec = Staged precision
     approximate st s = traceShow ("approximate", s) (approx st s)
     limit = Staged
+
+{-
+class Approximation a where
+   width :: a -> Int
+
+class ContFunctor f  where
+    fmapc        :: Approximation (f b) => (a -> b) -> f a -> f b
+
+    -- | Replace all locations in the input with the same value.
+    -- The default definition is @'fmap' . 'const'@, but this may be
+    -- overridden with a more efficient version.
+    (<$)        :: Approximation (f a) => a -> f b -> f a
+    (<$)        =  fmapc . const
+
+class ContFunctor f => ContApplicative f where
+    -- | Lift a value.
+    purec :: Approximation (f a) => a -> f a
+
+    -- | Sequential application.
+    (<*>) :: Approximation (f b) => f (a -> b) -> f a -> f b
+
+    -- | Sequence actions, discarding the value of the first argument.
+    (*>) :: f a -> f b -> f b
+    (*>) = liftA2c (const id)
+
+    -- | Sequence actions, discarding the value of the second argument.
+    (<*) :: f a -> f b -> f a
+    (<*) = liftA2c const
+-}

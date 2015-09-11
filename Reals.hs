@@ -27,6 +27,16 @@ instance ApproximateField q => Show (RealNum q) where
    show x = let i = approximate x (prec RoundDown 20)
             in show i
 
+flift2 f x y = Staged $ \s -> refine s s
+                  where
+                     refine s s2 = if app_prec int > precision s
+                                      then int
+                                      else refine s ( prec (rounding s2) (2*precision s2) )
+                       where
+                         int = f s2 (approx x s2) (approx y s2)
+
+
+
 -- | Linear order on real numbers
 instance Ord (Interval q) => LinearOrder (RealNum q) where
     less = lift2 (const (<))
@@ -44,9 +54,9 @@ instance Ord (Interval q) => Ord (RealNum q) where
 
 -- | The ring structure fo the reals.
 instance (ApproximateField (Interval q)) => Num (RealNum q) where
-    (+) = lift2 app_add
-    (-) = lift2 app_sub
-    (*) = lift2 app_mul
+    (+) = flift2 app_add
+    (-) = flift2 app_sub
+    (*) = flift2 app_mul
 
 --    abs = lift1 app_abs
 
@@ -61,7 +71,7 @@ instance (ApproximateField (Interval q)) => Num (RealNum q) where
 
 -- | Division and reciprocals.
 instance (ApproximateField (Interval q)) => Fractional (RealNum q) where
-    (/) = lift2 app_div
+    (/) = flift2 app_div
 
     recip = lift1 app_inv
 

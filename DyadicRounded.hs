@@ -8,11 +8,13 @@ module DyadicRounded (
   exact
 ) where
 
-import Prelude hiding (isNaN,isInfinite, div)
-import Data.Number.Rounded
 import ApproximateField hiding (prec)
+import Data.Number.Rounded
+import Debug.Trace
 import Interval
+import Prelude hiding (isNaN,isInfinite, div)
 import Reals
+
 
 {- | Dyadics with normalization and rounding form an "approximate"
   field in which operations can be performed up to a given precision.
@@ -65,6 +67,9 @@ instance ApproximateField Rounded where
 -}
   app_fromInteger s = fromIntegerA (rnd s) (prec s)
   app_fromRational s = fromRationalA (rnd s) (prec s)
+
+  app_prec a = traceShow (a,r) r
+    where r =  - fromEnum (getExp a)
 
   app_inv s a = div (rnd s) (prec s) (fromIntegerA Near 2 1) a
 {-  app_inv s NaN = normalize s NaN

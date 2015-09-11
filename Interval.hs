@@ -149,11 +149,13 @@ instance ApproximateField q => ApproximateField (Interval q) where
   app_fromRational s r =  Interval { lower = app_fromRational s r,
                                                       upper = app_fromRational (anti s) r}
 
+  app_prec Interval{lower=a, upper=b} = if zero == diff then maxBound else app_prec diff
+                                                     where diff = app_sub (precUp 0) b a
+
 split :: Midpoint q => Interval q -> (Interval q, Interval q)
 split Interval{lower=a, upper=b} =
     let c = midpoint a b
     in (Interval {lower=a, upper=c}, Interval {lower=c, upper=b})
-
 
 --  inormalize :: Stage -> i -> i
 --  embed :: Stage -> q -> i
