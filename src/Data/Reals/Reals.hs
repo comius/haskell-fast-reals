@@ -4,16 +4,16 @@
    parametrized by an approximate field, an example of which is "Dyadic".
 -}
 
-module Reals (
+module Data.Reals.Reals (
              RealNum, ClosedInterval (..), forall
 ) where
 
-import ApproximateField
+import Data.Approximate.ApproximateField
 import Debug.Trace
 import Data.Ratio
-import Interval
-import Space
-import Staged
+import Data.Approximate.Interval
+import Data.Reals.Space
+import Data.Reals.Staged
 
 -- | A real number is implemented as a staged dyadic interval @'Interval' q@ where @q@ is the
 -- underlying approximate field (in practiec these are dyadic rationals). @'RealNum' q@ can be used

@@ -7,7 +7,7 @@
    Here we use floats, but later we intend to replace them with exact reals.
 -}
 
-module Lipschitz where
+module Data.Reals.Lipschitz where
 
 import Control.Category
 import Control.Arrow

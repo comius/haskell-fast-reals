@@ -7,13 +7,12 @@
   domains is defined in the module "Reals".
 -}
 
-module Interval (
+module Data.Approximate.Interval (
   Interval (..),
   split
 ) where
 
-import Staged
-import ApproximateField
+import Data.Approximate.ApproximateField
 import Debug.Trace
 
 

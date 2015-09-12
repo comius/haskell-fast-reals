@@ -13,20 +13,20 @@ extra-source-files:  README.txt
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     Lipschitz, ApproximateField, DyadicRounded, Staged, Interval, Space, Reals
+  exposed-modules:     Data.Reals.Lipschitz, Data.Approximate.ApproximateField, Data.Approximate.Floating.MPFR, Data.Reals.Staged, Data.Approximate.Interval, Data.Reals.Space, Data.Reals.Reals
   -- other-modules:
   other-extensions:    Arrows, MultiParamTypeClasses, FunctionalDependencies, TypeSynonymInstances, FlexibleInstances
   build-depends:       Cabal >= 1.22.1.1
                      , base >=4.7 && <4.8
                      , rounded >= 0.1
   -- build-depends:       hmpfr
-  -- hs-source-dirs:
+  hs-source-dirs:      src
   default-language:    Haskell2010
 
 Test-Suite test-reals
     type:       detailed-0.9
-    test-module: TestReals
+    test-module: Data.Reals.TestReals
     build-depends: Cabal >= 1.22.1.1
                  , base, rounded >= 0.1, haskell-fast-reals == 0.1.0.0
+    hs-source-dirs:      testsuite/tests
     default-language: Haskell2010
-    other-modules: DyadicRounded, ApproximateField, Interval, Space, Reals, Staged

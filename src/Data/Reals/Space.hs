@@ -2,7 +2,7 @@
 
 -- | Basic definitions od spaces and their properties
 
-module Space (
+module Data.Reals.Space (
              sor, sand, force,
              Hausdorff  (..),
              Discrete (..),
@@ -11,7 +11,7 @@ module Space (
              LinearOrder (..)
 ) where
 
-import Staged
+import Data.Reals.Staged
 
 -- | The Sierpinski space @Sigma@ is represented by staged booleans
 type Sigma = Staged Bool

@@ -31,7 +31,7 @@
   like the @Reader@ monad of Haskell.
 -}
 
-module Staged (
+module Data.Reals.Staged (
               prec,
               Stage (..),
               RoundingMode (..),
@@ -39,7 +39,7 @@ module Staged (
               Staged (..)
 ) where
 
-import ApproximateField
+import Data.Approximate.ApproximateField
 import Control.Applicative
 import Debug.Trace
 

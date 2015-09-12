@@ -1,7 +1,7 @@
 {- | This module contains specification of approximate field.
 -}
 
-module ApproximateField (
+module Data.Approximate.ApproximateField (
        RoundingMode (..),
        Stage (..),
        anti,

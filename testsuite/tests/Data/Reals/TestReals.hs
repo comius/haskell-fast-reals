@@ -1,12 +1,12 @@
 -- |
 
-module TestReals where
+module Data.Reals.TestReals where
 
 import Control.Exception
 import Distribution.TestSuite
-import DyadicRounded
-import Reals
-import Space
+import Data.Approximate.Floating.MPFR
+import Data.Reals.Reals
+import Data.Reals.Space
 
 assertIn a b x = if x > a && x < b
   then return ()

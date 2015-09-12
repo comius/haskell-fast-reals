@@ -4,16 +4,15 @@
    a fast arbitrary-precision floating-point library MPFR via haskel module Data.Rounded
 -}
 
-module DyadicRounded (
+module Data.Approximate.Floating.MPFR (
   exact
 ) where
 
-import ApproximateField hiding (prec)
+import Data.Approximate.ApproximateField hiding (prec)
 import Data.Approximate.MPFRLowLevel
 import Debug.Trace
-import Interval
 import Prelude hiding (isNaN,isInfinite, div)
-import Reals
+import Data.Reals.Reals
 
 
 {- | Dyadics with normalization and rounding form an "approximate"
