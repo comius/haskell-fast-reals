@@ -9,7 +9,7 @@ module DyadicRounded (
 ) where
 
 import ApproximateField hiding (prec)
-import Data.Number.Rounded
+import Data.Approximate.MPFRLowLevel
 import Debug.Trace
 import Interval
 import Prelude hiding (isNaN,isInfinite, div)
@@ -43,7 +43,7 @@ instance ApproximateField Rounded where
                       RoundUp -> positive_inf
   normalize s a = set (rnd s) (prec s) a
 
-  size = fromInteger . toInteger . Data.Number.Rounded.getPrec
+  size = fromInteger . toInteger . getPrec
 -}
 
 --  log2 NaN = error "log2 of NaN"
@@ -51,7 +51,7 @@ instance ApproximateField Rounded where
 --  log2 NegativeInfinity = error "log2 of -inf"
 --  log2 Dyadic{mant=m, expo=e} = e + ilogb 2 m
 
-  zero = Data.Number.Rounded.zero
+  zero = Data.Approximate.MPFRLowLevel.zero
   positive_inf = posInf
   negative_inf = negInf
 
@@ -109,10 +109,10 @@ instance Midpoint Rounded where
 --  midpoint a b | isNaN a = a
 --  midpoint a b | isNaN b = b
 --  midpoint a b | isInfinite a && isInfinite b && a == b = a
---  midpoint a b | isInfinite a && isInfinite b = Data.Number.Rounded.zero
+--  midpoint a b | isInfinite a && isInfinite b = zero
   midpoint a b = mul2i Near p (add Near p a b) (-1)
            where p = 1 + maxPrec a b
-                 maxPrec a b = max (Data.Number.Rounded.getPrec a) (Data.Number.Rounded.getPrec b)
+                 maxPrec a b = max (getPrec a) (getPrec b)
 
 {-  midpoint NaN _ = NaN
   midpoint _ NaN = NaN
