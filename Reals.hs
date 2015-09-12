@@ -5,7 +5,7 @@
 -}
 
 module Reals (
-             RealNum
+             RealNum, ClosedInterval (..), forall
 ) where
 
 import ApproximateField
@@ -29,11 +29,12 @@ instance ApproximateField q => Show (RealNum q) where
 
 flift2 f x y = Staged $ \s -> refine s s
                   where
+
                      refine s s2 = if app_prec int > precision s
                                       then int
                                       else refine s ( prec (rounding s2) (2*precision s2) )
                        where
-                         int = f s2 (approx x s2) (approx y s2)
+                          int = f s2 (approx x s2) (approx y s2)
 
 
 
@@ -66,8 +67,8 @@ instance (ApproximateField (Interval q)) => Num (RealNum q) where
                       return Interval { lower = app_signum s (lower i),
                                           upper = app_signum (anti s) (upper i) --}
 
-    fromInteger k = Staged $ \s ->
-                     (traceShow ("fi",k, s) app_fromInteger s k)
+    fromInteger k = Staged $ \s -> i
+                     where i = (traceShow ("fi",k) app_fromInteger (precDown 64) k)
 
 -- | Division and reciprocals.
 instance (ApproximateField (Interval q)) => Fractional (RealNum q) where
