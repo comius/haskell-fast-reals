@@ -29,12 +29,12 @@ instance ApproximateField q => Show (RealNum q) where
 
 flift2 f x y = Staged $ \s -> refine s s
                   where
-
-                     refine s s2 = if app_prec int > precision s
+                     refine s s2 = if width int > precision s
                                       then int
                                       else refine s ( prec (rounding s2) (2*precision s2) )
                        where
                           int = f s2 (approx x s2) (approx y s2)
+
 
 
 
@@ -54,12 +54,12 @@ instance Ord (Interval q) => Ord (RealNum q) where
   compare x y = if force (x `less` y) then LT else GT
 
 -- | The ring structure fo the reals.
-instance (ApproximateField (Interval q)) => Num (RealNum q) where
-    (+) = flift2 app_add
-    (-) = flift2 app_sub
-    (*) = flift2 app_mul
+instance (DyadicField q, ApproximateField (Interval q)) => Num (RealNum q) where
+    (+) = flift2 appAdd
+    (-) = flift2 appSub
+    (*) = flift2 appMul
 
---    abs = lift1 app_abs
+    abs = lift1 appAbs
 
     signum _ = error "could diverge"
     {- signum x = do i <- x
@@ -68,16 +68,16 @@ instance (ApproximateField (Interval q)) => Num (RealNum q) where
                                           upper = app_signum (anti s) (upper i) --}
 
     fromInteger k = Staged $ \s -> i
-                     where i = (traceShow ("fi",k) app_fromInteger (precDown 64) k)
+                     where i = (traceShow ("fi",k) appFromInteger k)
 
 -- | Division and reciprocals.
-instance (ApproximateField (Interval q)) => Fractional (RealNum q) where
-    (/) = flift2 app_div
+instance (DyadicField q, ApproximateField (Interval q)) => Fractional (RealNum q) where
+    (/) = flift2 appDiv
 
-    recip = lift1 app_inv
+    recip = lift1 appInv
 
     fromRational r = Staged $ \s ->
-                                (traceShow ("fr",r, s) app_fromRational s r)
+                                (traceShow ("fr",r, s) appFromRational s r)
 
 
 -- | The Hausdorff property
@@ -88,7 +88,7 @@ instance Ord (Interval q) => Hausdorff (RealNum q) where
 newtype ClosedInterval q = ClosedInterval (q, q)
 
 -- | Compactness of the closed interval
-instance (Midpoint q) => Compact (ClosedInterval q) (RealNum q) where
+instance (DyadicField q) => Compact (ClosedInterval q) (RealNum q) where
    forall (ClosedInterval(a,b)) p =
      limit (\s ->
        let r = rounding s

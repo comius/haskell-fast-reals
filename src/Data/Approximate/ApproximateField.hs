@@ -9,7 +9,7 @@ module Data.Approximate.ApproximateField (
        precUp,
        prec,
        ApproximateField (..),
-       Midpoint (..)
+       DyadicField (..)
 ) where
 
 -- | The rounding mode tells us whether we should under- or over-approximate the exact result.
@@ -39,8 +39,6 @@ prec :: RoundingMode -> Int -> Stage
 prec r k = Stage {precision = k, rounding = r}
 
 
-
-
 {- | An approximate field is a structure in which we can perform approximate
 arithmetical operations. The typical example is the ring of dyadic rational
 numbers: division of dyadic rationals is only approximate, and even though the
@@ -55,29 +53,56 @@ linear ordering of the structure, and how precise the result should be.
 (Missing explanation of what exactly an approximate field is supposed to be.)
 -}
 class (Show q, Ord q) => ApproximateField q where
---  normalize :: Stage -> q -> q
---  size :: q -> Int -- ^ the size of the number (memory usage)
---  log2 :: q -> Int -- ^ @log2 q@ is a number @k@ such that @2^k <= abs q <= 2^(k+1)@.
-  app_prec :: q -> Int
-
   zero :: q
-  positive_inf :: q
-  negative_inf :: q
+  zero = appFromInteger 0
 
---  toFloat :: q -> Double
+  -- conversions from
+  appFromInteger :: Integer -> q
+  appFromRational_ :: Stage -> Rational -> (q, Bool)
+  -- ^ returns also whether this rational has an exact representation
+  appFromRational :: Stage -> Rational -> q
+  appFromRational s q = fst $ appFromRational_ s q
 
   -- approximate operations
-  app_add :: Stage -> q -> q -> q
-  app_sub :: Stage -> q -> q -> q
-  app_mul :: Stage -> q -> q -> q
-  app_inv :: Stage -> q -> q
-  app_div :: Stage -> q -> q -> q
-  app_negate :: Stage -> q -> q
---  app_abs :: Stage -> q -> q
---  app_signum :: Stage -> q -> q
-  app_fromInteger :: Stage -> Integer -> q
-  app_fromRational :: Stage -> Rational -> q
---  app_shift :: Stage -> q -> Int -> q -- ^ shift by a power of 2
+  appAdd :: Stage -> q -> q -> q
+  appSub :: Stage -> q -> q -> q
+  appMul :: Stage -> q -> q -> q
+  appInv :: Stage -> q -> q
+  appDiv :: Stage -> q -> q -> q
+  appNeg :: Stage -> q -> q
+  appAbs :: Stage -> q -> q
 
-class Midpoint q where
-  midpoint :: q -> q -> q -- ^ exact midpoint
+
+class ApproximateField q => DyadicField q where
+  -- special values
+  posInf :: q
+  negInf :: q
+  naN :: q
+
+  isUnordered :: q -> q -> Bool
+
+  -- accessing internal structure of the numbers
+  appGetExp :: q -> Int -- ^ returns a number @k@ such that @2^k <= abs q <= 2^(k+1)@.
+  appPrec :: q -> Int -- ^ the size of the number (memory usage)
+
+  -- additional operations
+  --  toFloat :: q -> Double
+  appMul2 :: Stage -> q -> Int -> q  -- ^ shift by a power of 2
+  appMul2 s q i = appMul s q (appFromInteger (toInteger i))
+
+  {-| Exact midpoint -}
+  midpoint :: q -> q -> q
+
+  midpoint a b
+    | isUnordered a b            = naN
+    | cmp == EQ                  = a
+    | c == negInf && d < zero    = appMul2 p d 1
+    | c == negInf && d == zero   = appFromInteger (-1)
+    | c > zero && d == posInf    = appMul2 p c 1
+    | c == zero && d == posInf   = appFromInteger 1
+    | c == negInf || d == posInf = zero  -- careful: order of statements should not change
+    | otherwise                  = appMul2 p (appAdd p a b) (-1)
+    where
+      cmp    = compare a b
+      (c, d) = if cmp == LT then (a, b) else (b, a)
+      p = precDown $ 1 + max (appPrec a) (appPrec b)

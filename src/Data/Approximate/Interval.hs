@@ -9,7 +9,7 @@
 
 module Data.Approximate.Interval (
   Interval (..),
-  split
+  width, split,
 ) where
 
 import Data.Approximate.ApproximateField
@@ -47,18 +47,21 @@ instance Ord q => Ord (Interval q) where
   i <= j = upper i <= lower j
 
 
-instance ApproximateField q => ApproximateField (Interval q) where
-  app_add s a b = Interval { lower = app_add s (lower a) (lower b),
-                             upper = app_add (anti s) (upper a) (upper b)}
+instance DyadicField q => ApproximateField (Interval q) where
+  appAdd s a b = Interval { lower = appAdd s (lower a) (lower b),
+                              upper = appAdd (anti s) (upper a) (upper b)}
 
-  app_sub s a b = Interval { lower = app_sub s (lower a) (upper b),
-                             upper = app_sub (anti s) (upper a) (lower b)}
+  appSub s a b = Interval { lower = appSub s (lower a) (upper b),
+                              upper = appSub (anti s) (upper a) (lower b)}
+
+  appNeg s b = Interval { lower = appNeg s (upper b),
+                              upper = appNeg (anti s) (lower b)}
 
   -- Kaucher multiplication
-  app_mul s Interval{lower=a,upper=b} Interval{lower=c,upper=d} =
+  appMul s Interval{lower=a,upper=b} Interval{lower=c,upper=d} =
     let negative q = q < zero
-        lmul = app_mul s
-        umul = app_mul (anti s)
+        lmul = appMul s
+        umul = appMul (anti s)
     in traceShow s Interval { lower = if negative a
                                        then if negative b
                                             then if negative d
@@ -106,57 +109,49 @@ instance ApproximateField q => ApproximateField (Interval q) where
                                                  then umul a d
                                                  else umul b d}
 
-  app_inv s Interval{lower=a, upper=b} =
+  appInv s Interval{lower=a, upper=b} =
     let sgn q = compare q zero
-        linv = app_inv s
-        uinv = app_inv (anti s)
+        linv = appInv s
+        uinv = appInv (anti s)
     in Interval { lower = case (sgn a, sgn b) of
                              (LT, LT) -> linv b
                              (EQ, LT) -> linv b
-                             (GT, LT) -> positive_inf
-                             (LT, EQ) -> negative_inf
-                             (EQ, EQ) -> negative_inf
-                             (GT, EQ) -> positive_inf
-                             (LT, GT) -> negative_inf
-                             (EQ, GT) -> negative_inf
+                             (GT, LT) -> posInf
+                             (LT, EQ) -> negInf
+                             (EQ, EQ) -> negInf
+                             (GT, EQ) -> posInf
+                             (LT, GT) -> negInf
+                             (EQ, GT) -> negInf
                              (GT, GT) -> linv b,
                   upper = case (sgn a, sgn b) of
                              (LT, LT) -> uinv a
-                             (EQ, LT) -> negative_inf
-                             (GT, LT) -> negative_inf
-                             (LT, EQ) -> positive_inf
-                             (EQ, EQ) -> positive_inf
+                             (EQ, LT) -> negInf
+                             (GT, LT) -> negInf
+                             (LT, EQ) -> posInf
+                             (EQ, EQ) -> posInf
                              (GT, EQ) -> uinv a
-                             (LT, GT) -> positive_inf
-                             (EQ, GT) -> positive_inf
+                             (LT, GT) -> posInf
+                             (EQ, GT) -> posInf
                              (GT, GT) -> uinv a}
 
-  app_div s a b = app_mul s a (app_inv s b)
+  appDiv s a b = appMul s a (appInv s b)
 
---  inormalize s a = Interval { lower = normalize s (lower a),
---                              upper = normalize (anti s) (upper a) }
+  appAbs s a = Interval { lower = zero,
+                          upper = let q = appNeg s (lower a)
+                                      r = upper a
+                                  in if q < r then r else q }
+  appFromInteger k = Interval { lower = appFromInteger k,
+                                  upper = appFromInteger k }
 
---  embed s q = Interval { lower = q, upper = q }
+  --TODO
+  appFromRational_ s r = (Interval { lower = appFromRational s r,
+                                                       upper = appFromRational (anti s) r}, False)
 
---  iabs s a = Interval { lower = app_fromInteger s 0,
---                        upper = let q = app_negate s (lower a)
---                                    r = upper a
---                                in if q < r then r else q }
-  app_fromInteger s k = Interval { lower = app_fromInteger s k,
-                                   upper = app_fromInteger (anti s) k }
+width :: DyadicField q => Interval q -> Int
+width Interval{lower=a, upper=b} = if zero == diff then maxBound else appPrec diff
+    where diff = appSub (precUp 0) b a
 
-  app_fromRational s r =  Interval { lower = app_fromRational s r,
-                                                      upper = app_fromRational (anti s) r}
-
-  app_prec Interval{lower=a, upper=b} = if zero == diff then maxBound else app_prec diff
-                                                     where diff = app_sub (precUp 0) b a
-
-split :: Midpoint q => Interval q -> (Interval q, Interval q)
+split :: DyadicField q => Interval q -> (Interval q, Interval q)
 split Interval{lower=a, upper=b} =
     let c = midpoint a b
     in (Interval {lower=a, upper=c}, Interval {lower=c, upper=b})
-
---  inormalize :: Stage -> i -> i
---  embed :: Stage -> q -> i
---  split :: i -> (i, i)
--- width :: i -> q
