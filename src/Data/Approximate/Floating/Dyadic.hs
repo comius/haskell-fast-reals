@@ -10,15 +10,13 @@
    there we use [-inf, +inf] to represent the completely undefined value.
 -}
 
-module Dyadic (
+module Data.Approximate.Floating.Dyadic (
   Dyadic(..),
 ) where
 
 import Data.Bits
-import Staged
-import ApproximateField
-import Interval
-import Reals
+import Data.Approximate.ApproximateField
+
 
 -- | A dyadic number is of the form @m * 2^e@ where @m@ is the /mantissa/ and @e@ is the /exponent/.
 data Dyadic = Dyadic { mant :: Integer, expo :: Int }
@@ -180,27 +178,16 @@ normalize s a@(Dyadic {mant=m, expo=e}) =
 -}
 
 instance ApproximateField Dyadic where
-
-{-  size NaN = 0
-  size PositiveInfinity = 0
-  size NegativeInfinity = 0
-  size Dyadic{mant=m, expo=e} = ilogb 2 m
-
-  log2 NaN = error "log2 of NaN"
-  log2 PositiveInfinity = error "log2 of +inf"
-  log2 NegativeInfinity = error "log2 of -inf"
-  log2 Dyadic{mant=m, expo=e} = e + ilogb 2 m-}
-
   zero = Dyadic {mant=0, expo=1}
-  positive_inf = PositiveInfinity
-  negative_inf = NegativeInfinity
+
+
 
 {-  toFloat NaN = 0.0 / 0.0
   toFloat PositiveInfinity = 1.0 / 0.0
   toFloat NegativeInfinity = - 1.0 / 0.0
   toFloat Dyadic{mant=m, expo=e} = encodeFloat m e-}
 
-  midpoint NaN _ = NaN
+{-  midpoint NaN _ = NaN
   midpoint _ NaN = NaN
   midpoint NegativeInfinity NegativeInfinity = NegativeInfinity
   midpoint NegativeInfinity PositiveInfinity = zero
@@ -213,19 +200,21 @@ instance ApproximateField Dyadic where
   midpoint Dyadic{mant=m1,expo=e1} Dyadic{mant=m2,expo=e2} = Dyadic {mant = m3, expo = e3 - 1}
     where m3 = if e1 < e2 then m1 + shiftL m2 (e2 - e1) else shiftL m1 (e1 - e2) + m2
           e3 = min e1 e2
+-}
 
-  app_add s a b = normalize s (a + b)
-  app_sub s a b = normalize s (a - b)
-  app_mul s a b = normalize s (a * b)
-  app_negate s = negate
-{-  app_abs s a = normalize s (abs a)
-  app_signum s a = normalize s (signum a)-}
-  app_fromInteger s i   = normalize s (fromInteger i)
+  appAdd s a b = normalize s (a + b)
+  appSub s a b = normalize s (a - b)
+  appMul s a b = normalize s (a * b)
+  appNeg s = negate
+  appAbs s a = normalize s (abs a)
+--  app_signum s a = normalize s (signum a)-}
+  appFromInteger i = fromInteger i
+  appFromRational_ r = undefined
 
-  app_inv s NaN = normalize s NaN
-  app_inv s PositiveInfinity = zero
-  app_inv s NegativeInfinity = zero
-  app_inv s Dyadic{mant=m, expo=e} =
+  appInv s NaN = normalize s NaN
+  appInv s PositiveInfinity = zero
+  appInv s NegativeInfinity = zero
+  appInv s Dyadic{mant=m, expo=e} =
     let d = precision s
         b = ilogb 2 m
         r = case rounding s of
@@ -235,7 +224,7 @@ instance ApproximateField Dyadic where
        then normalize s NaN
        else Dyadic {mant = r + (shiftL 1 (d + b)) `div` m, expo = -(b + d + e)}
 
-  app_div s Dyadic{mant=m1,expo=e1} Dyadic{mant=m2,expo=e2} =
+  appDiv s Dyadic{mant=m1,expo=e1} Dyadic{mant=m2,expo=e2} =
       let e = precision s
           r = case rounding s of
                 RoundDown -> 0
@@ -243,15 +232,30 @@ instance ApproximateField Dyadic where
       in if signum m2 == 0
       then normalize s NaN
       else Dyadic {mant = r + (shiftL 1 e * m1) `div` m2, expo = e1 - e2 - e}
-  app_div s _ _ = normalize s NaN -- can we do better than this in other cases?
+  appDiv s _ _ = normalize s NaN -- can we do better than this in other cases?
 
-  app_shift s NaN k = normalize s NaN
-  app_shift s PositiveInfinity k = PositiveInfinity
-  app_shift s NegativeInfinity k = NegativeInfinity
-  app_shift s Dyadic {mant=m, expo=e} k = normalize s Dyadic {mant = m, expo = e + k}
 
--- | This is a convenience function which allows us to write @exact 1.3@ as a
--- conversion from floating points to real numbers. There probably is a better way of
--- doing this.
-exact :: RealNum Dyadic -> RealNum Dyadic
-exact x = x
+
+instance DyadicField Dyadic where
+  posInf = PositiveInfinity
+  negInf = NegativeInfinity
+  naN = NaN
+
+  isUnordered NaN _ = True
+  isUnordered _ NaN = True
+  isUnordered _ _ = False
+
+  appMul2 s NaN k = normalize s NaN
+  appMul2 s PositiveInfinity k = PositiveInfinity
+  appMul2 s NegativeInfinity k = NegativeInfinity
+  appMul2 s Dyadic {mant=m, expo=e} k = normalize s Dyadic {mant = m, expo = e + k}
+
+  appPrec NaN = 0
+  appPrec PositiveInfinity = 0
+  appPrec NegativeInfinity = 0
+  appPrec Dyadic{mant=m, expo=e} = ilogb 2 m
+
+  appGetExp NaN = error "log2 of NaN"
+  appGetExp PositiveInfinity = error "log2 of +inf"
+  appGetExp NegativeInfinity = error "log2 of -inf"
+  appGetExp Dyadic{mant=m, expo=e} = e + ilogb 2 m
