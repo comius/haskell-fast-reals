@@ -5,7 +5,7 @@
 -}
 
 module Data.Reals.Reals (
-             RealNum, approximate--, ClosedInterval (..), forall, approximate
+             RealNum, approximate, ClosedInterval (..), forall
 ) where
 
 import Data.Approximate.ApproximateField
