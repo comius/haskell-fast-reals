@@ -13,10 +13,14 @@ extra-source-files:  README.txt
 cabal-version:       >=1.10
 
 library
-    exposed-modules: Data.Reals.Lipschitz, Data.Approximate.ApproximateField,
-                     Data.Approximate.Floating.MPFR, Data.Reals.Staged,
-                     Data.Approximate.Interval, Data.Reals.Space, Data.Reals.Reals
-                   --, Data.Approximate.Floating.HMPFR
+    exposed-modules: Data.Reals.Reals
+                     Data.Reals.Lipschitz
+                     Data.Approximate.ApproximateField
+                     Data.Approximate.Floating.MPFR
+                     Data.Reals.Staged
+                     Data.Approximate.Interval
+                     Data.Reals.Space
+                   --Data.Approximate.Floating.HMPFR
     -- other-modules:
     other-extensions:Arrows, MultiParamTypeClasses, FunctionalDependencies,
                      TypeSynonymInstances, FlexibleInstances
