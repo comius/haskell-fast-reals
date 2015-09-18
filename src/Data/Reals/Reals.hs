@@ -5,21 +5,23 @@
 -}
 
 module Data.Reals.Reals (
-             RealNum, ClosedInterval (..), forall
+             RealNum, approximate--, ClosedInterval (..), forall, approximate
 ) where
 
 import Data.Approximate.ApproximateField
 import Debug.Trace
+--import Debug.Trace
 import Data.Ratio
 import Data.Approximate.Interval
 import Data.Reals.Space
 import Data.Reals.Staged
+import Data.Approximate.Floating.MPFR
 
 -- | A real number is implemented as a staged dyadic interval @'Interval' q@ where @q@ is the
 -- underlying approximate field (in practiec these are dyadic rationals). @'RealNum' q@ can be used
 -- to represent not only real numbers but also the elements of the interval domain, including the
 -- back-to-front intervals.
-type RealNum q = Staged (Interval q)
+type RealNum q = MStaged (Interval q)
 
 -- | We implement a very simple show instance for reals which computes the 20th approximation
 -- and shows it as an interval, together with a floating point approximation.
@@ -30,17 +32,31 @@ instance ApproximateField q => Show (RealNum q) where
 flift2 f x y = Staged $ \s -> refine s s
                   where
                      refine s s2 = if width int > precision s
-                                      then int
-                                      else refine s ( prec (rounding s2) (2*precision s2) )
+                                     then int
+                                     else refine s ( prec (rounding s2) (2*precision s2) )
                        where
                           int = f s2 (approx x s2) (approx y s2)
 
-
+--mflift2 :: (Interval q -> Interval q -> Interval q) ->  (RealNum q -> RealNum q -> RealNum q)
+mflift2 name f x y = MStaged $ \s ->  (refine x y s s)
+    where
+      refine x y sIn sOut  =
+         if wi > precision sOut
+           then (int, MStaged $ \s -> nextcall x' y' wi int sIn s)  -- remember current precision
+           else refine x' y' ( prec (rounding sIn) (2*precision sIn) ) sOut
+        where
+         (x0,x') = mapprox x sIn
+         (y0,y') = mapprox y sIn
+         int =  {- traceShow (name, precision sIn, precision sOut) $-} f sIn x0 y0
+         wi = width int
+      nextcall x y wi int sIn sOut =
+        if wi > precision sOut then (int, MStaged $ \s -> nextcall x y wi int sIn s)
+        else refine x y ( prec (rounding sIn) (2*precision sIn) ) sOut
 
 
 -- | Linear order on real numbers
 instance Ord (Interval q) => LinearOrder (RealNum q) where
-    less = lift2 (const (<))
+    less = lift2 (\s -> (<) )
 
 -- | It is a bad idea to use Haskell-style inequality @/=@ on reals because it either returns @True@
 -- or it diverges. Similarly, using Haskell equality @==@ is bad. Nevertheless, we define @==@ and @/=@
@@ -55,9 +71,9 @@ instance Ord (Interval q) => Ord (RealNum q) where
 
 -- | The ring structure fo the reals.
 instance (DyadicField q, ApproximateField (Interval q)) => Num (RealNum q) where
-    (+) = flift2 appAdd
-    (-) = flift2 appSub
-    (*) = flift2 appMul
+    (+) = mflift2 "+" appAdd
+    (-) = mflift2 "-" appSub
+    (*) = mflift2 "*" appMul
 
     abs = lift1 appAbs
 
@@ -67,17 +83,17 @@ instance (DyadicField q, ApproximateField (Interval q)) => Num (RealNum q) where
                       return Interval { lower = app_signum s (lower i),
                                           upper = app_signum (anti s) (upper i) --}
 
-    fromInteger k = Staged $ \s -> i
-                     where i = (traceShow ("fi",k) appFromInteger k)
+    fromInteger k = MStaged $ \s -> (i, fromInteger k)
+                     where i = ({-traceShow ("fi",k)-} appFromInteger k)
 
 -- | Division and reciprocals.
 instance (DyadicField q, ApproximateField (Interval q)) => Fractional (RealNum q) where
-    (/) = flift2 appDiv
+    (/) = mflift2 "/" appDiv
 
-    recip = lift1 appInv
+    recip = undefined --lift1 appInv
 
-    fromRational r = Staged $ \s ->
-                                (traceShow ("fr",r, s) appFromRational s r)
+    fromRational r = MStaged $ \s ->
+                                ({-traceShow ("fr",r, s)-} appFromRational s r, fromRational r)
 
 
 -- | The Hausdorff property
@@ -86,7 +102,7 @@ instance Ord (Interval q) => Hausdorff (RealNum q) where
 
 -- | The value @ClosedInterval(a,b)@ represents the closed interval [a,b] as a subspace of the reals.
 newtype ClosedInterval q = ClosedInterval (q, q)
-
+{-
 -- | Compactness of the closed interval
 instance (DyadicField q) => Compact (ClosedInterval q) (RealNum q) where
    forall (ClosedInterval(a,b)) p =
@@ -148,3 +164,4 @@ approxTo x k =
        estimate an @n@ which should give @r_n < 2^{ -n-1}@. If the estimate fails,
        we try something else. The drawback is that we might end up over-estimating
        the needed precision @n@. -}
+-}

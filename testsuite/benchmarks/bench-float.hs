@@ -40,7 +40,7 @@ showTime start end n =
 measure f s =
   do
     start  <- getCurrentTime
-    ncalls <- runAndMeasure start 1 (return 1) f
+    !ncalls <- runAndMeasure start 1 (return 1) f
     end <- getCurrentTime
     putStrLn $ s ++ " took    " ++ showTime start end ncalls ++
       " (" ++ show ncalls ++ " eval in " ++ showTime start end 1 ++ ")"
@@ -98,7 +98,6 @@ main = do
     let n = 1000
     let precbits = truncate $ n * Prelude.log (10.0) / Prelude.log (2.0) + 1.0
     putStrLn $ "[precision is " ++ show precbits ++ " bits]"
-
     let s = precDown precbits
     let !x = appSub s (appSqrt s (appFromInteger 3)) (appFromInteger 1)
     let !y = appSqrt s (appFromInteger 5)
@@ -109,7 +108,7 @@ main = do
     -}
     --{-
     measure (\() -> appSet s x)   "x=x      "
-    ---}
+    ---
     measure (\() -> appAdd s x y) "x+y      "
     measure (\() -> appMul s x y) "x*y      "
     measure (\() -> appMul s x x) "x*x      "

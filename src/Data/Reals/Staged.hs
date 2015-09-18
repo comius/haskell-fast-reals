@@ -36,12 +36,13 @@ module Data.Reals.Staged (
               Stage (..),
               RoundingMode (..),
               Completion (..),
-              Staged (..)
+              Staged (..),
+              MStaged (..)
 ) where
 
 import Data.Approximate.ApproximateField
 import Control.Applicative
-import Debug.Trace
+--import Debug.Trace
 
 {- | The 'Completion' class represents a completion operation. An instance @m@ of class 'Completion'
    is a type constructor which takes a type @b@ representing the base, i.e., the approximations, and
@@ -92,8 +93,31 @@ instance Completion Staged where
     getStage = Staged id
     getRounding = Staged rounding
     getPrec = Staged precision
-    approximate st s = traceShow ("approximate", s) (approx st s)
+    approximate st s = {-traceShow ("approximate", s)-} (approx st s)
     limit = Staged
+
+newtype MStaged t = MStaged { mapprox :: Stage -> (t, MStaged t) }
+
+-- | The functor structure of 'Staged' is the same as that of the @Reader@ monad.
+instance Functor MStaged where
+    fmap f x = MStaged $ approx'
+      where approx' s = (f approx1, fmap f approx2 )
+             where
+                   (approx1, approx2) = mapprox x s
+
+instance Applicative MStaged where
+    pure a    = MStaged $ \s -> (a, pure a)
+    (<*>) f x = MStaged $ approx'
+                           where approx' s = (b1 a1, b2 <*> a2)
+                                                            where (a1, a2) = mapprox x s
+                                                                  (b1, b2) = mapprox f s
+
+instance Completion MStaged where
+    getStage = MStaged $ \s -> (s, getStage)
+    getRounding = MStaged $ \s -> (rounding s, getRounding)
+    getPrec = MStaged $ \s -> (precision s, getPrec)
+    approximate st s = {-traceShow ("approximate", s)-} fst (mapprox st s)
+    limit f = MStaged $ \s -> (f s, limit f)
 
 {-
 class Approximation a where

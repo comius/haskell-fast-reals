@@ -4,11 +4,12 @@
    a fast arbitrary-precision floating-point library MPFR via haskel module Data.Rounded
 -}
 
-module Data.Approximate.Floating.MPFR  where
+module Data.Approximate.Floating.MPFR (Rounded)
+where
 
 import Data.Approximate.ApproximateField hiding (prec)
 import Data.Approximate.MPFRLowLevel as MPFR
-import Debug.Trace
+--import Debug.Trace
 import Prelude hiding (isNaN,isInfinite, div)
 
 
@@ -40,7 +41,7 @@ instance DyadicField Rounded where
   negInf = MPFR.negInf
   naN = MPFR.naN
 
-  appGetExp a = traceShow (a,r) r
+  appGetExp a = {-traceShow (a,r)-} r
     where r = -fromEnum (getExp a)
   appPrec a = getPrec a
 

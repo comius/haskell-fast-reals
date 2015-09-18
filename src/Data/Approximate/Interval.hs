@@ -13,7 +13,7 @@ module Data.Approximate.Interval (
 ) where
 
 import Data.Approximate.ApproximateField
-import Debug.Trace
+--import Debug.Trace
 
 
 {- | An interval is represented by a lower and upper endpoint. We do
@@ -62,52 +62,67 @@ instance DyadicField q => ApproximateField (Interval q) where
     let negative q = q < zero
         lmul = appMul s
         umul = appMul (anti s)
-    in traceShow s Interval { lower = if negative a
-                                       then if negative b
-                                            then if negative d
-                                                 then lmul b d
-                                                 else lmul a d
-                                            else if negative c
-                                                 then if negative d
-                                                      then lmul b c
-                                                      else min (lmul a d) (lmul b c)
-                                                 else if negative d
-                                                      then zero
-                                                      else lmul a d
-                                       else if negative b
-                                            then if negative c
-                                                 then if negative d
-                                                      then lmul b d
-                                                      else zero
-                                                 else if negative d
-                                                      then max (lmul a c) (lmul b d)
-                                                      else lmul a c
-                                       else if negative c
-                                            then lmul b c
-                                            else lmul a c,
-                              upper = if negative a
-                                       then if negative b
-                                            then if negative c
-                                                 then umul a c
-                                                 else umul b c
-                                            else if negative c
-                                                 then if negative d
+    in {-traceShow s-} Interval { lower =
+                                   case (negative a, negative b, negative c, negative d) of
+                                     (True, True, _, True) -> lmul b d
+                                     (True, True, _, False) -> lmul a d
+                                     (True, False, True, True) -> lmul b c
+                                     (True, False, True, False) -> min (lmul a d) (lmul b c)
+                                     (True, False, False, True) -> zero
+                                     (True, False, False, False) -> lmul a d
+                                     (False, True, True, True) -> lmul b d
+                                     (False, True, True, False) -> zero
+                                     (False, True, False, True) -> max (lmul a c) (lmul b d)
+                                     (False, True, False, False) -> lmul a c
+                                     (False, False, True, _) -> lmul b c
+                                     (False, False, False, _) -> lmul a c
+                                      {- if negative a
+                                          then if negative b
+                                               then if negative d
+                                                    then lmul b d
+                                                    else lmul a d
+                                               else if negative c
+                                                    then if negative d
+                                                         then lmul b c
+                                                         else min (lmul a d) (lmul b c)
+                                                    else if negative d
+                                                         then zero
+                                                         else lmul a d
+                                          else if negative b
+                                               then if negative c
+                                                    then if negative d
+                                                         then lmul b d
+                                                         else zero
+                                                    else if negative d
+                                                         then max (lmul a c) (lmul b d)
+                                                         else lmul a c
+                                          else if negative c
+                                               then lmul b c
+                                               else lmul a c-}
+                                ,
+                                   upper = if negative a
+                                            then if negative b
+                                                 then if negative c
                                                       then umul a c
-                                                      else max (umul a c) (umul b d)
-                                                 else if negative d
-                                                      then zero
-                                                      else umul b d
-                                       else if negative b
-                                            then if negative c
-                                                 then if negative d
-                                                      then umul a d
-                                                      else zero
-                                                 else if negative d
-                                                      then min (umul a d) (umul b c)
                                                       else umul b c
-                                            else if negative d
-                                                 then umul a d
-                                                 else umul b d}
+                                                 else if negative c
+                                                      then if negative d
+                                                           then umul a c
+                                                           else max (umul a c) (umul b d)
+                                                      else if negative d
+                                                           then zero
+                                                           else umul b d
+                                            else if negative b
+                                                 then if negative c
+                                                      then if negative d
+                                                           then umul a d
+                                                           else zero
+                                                      else if negative d
+                                                           then min (umul a d) (umul b c)
+                                                           else umul b c
+                                                 else if negative d
+                                                      then umul a d
+                                                      else umul b d}
 
   appInv s Interval{lower=a, upper=b} =
     let sgn q = compare q zero
@@ -148,7 +163,7 @@ instance DyadicField q => ApproximateField (Interval q) where
                                                        upper = appFromRational (anti s) r}, False)
 
 width :: DyadicField q => Interval q -> Int
-width Interval{lower=a, upper=b} = if zero == diff then maxBound else appPrec diff
+width Interval{lower=a, upper=b} = if zero == diff then maxBound else (appGetExp diff)
     where diff = appSub (precUp 0) b a
 
 split :: DyadicField q => Interval q -> (Interval q, Interval q)

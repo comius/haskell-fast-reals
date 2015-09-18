@@ -16,12 +16,14 @@ library
     exposed-modules: Data.Reals.Lipschitz, Data.Approximate.ApproximateField,
                      Data.Approximate.Floating.MPFR, Data.Reals.Staged,
                      Data.Approximate.Interval, Data.Reals.Space, Data.Reals.Reals
+                   --, Data.Approximate.Floating.HMPFR
     -- other-modules:
     other-extensions:Arrows, MultiParamTypeClasses, FunctionalDependencies,
                      TypeSynonymInstances, FlexibleInstances
     build-depends:   Cabal   >= 1.22.1.1
                    , base    >= 4.7 && <4.8
                    , rounded >= 0.1
+                   --, hmpfr >= 0.3.3.5
                    , time >= 1.4.2
     hs-source-dirs:  src
     default-language:Haskell2010
@@ -41,5 +43,22 @@ Benchmark bench-dyadic
     main-is:         bench-float.hs
     build-depends:   base
                    --, hmpfr >= 0.3.3.5
+                   , haskell-fast-reals == 0.1.0.0
+                   , rounded >= 0.1
                    , time
     hs-source-dirs:  testsuite/benchmarks
+    default-language:Haskell2010
+
+Benchmark bench-reals
+    type:            exitcode-stdio-1.0
+    main-is:         bench-reals.hs
+    build-depends:   base
+                   , haskell-fast-reals == 0.1.0.0
+                   , rounded >= 0.1
+                   , time
+    hs-source-dirs:  testsuite/benchmarks
+--    ghc-options:     -O2
+--                     -threaded
+--                     -fprof-auto
+--                     "-with-rtsopts=-N -p -s -h -i0.1"
+    default-language:Haskell2010
