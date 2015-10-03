@@ -37,18 +37,20 @@ flift2 f x y = Staged $ \s -> refine s s
                        where
                           int = f s2 (approx x s2) (approx y s2)
 
+
+
 --mflift2 :: (Interval q -> Interval q -> Interval q) ->  (RealNum q -> RealNum q -> RealNum q)
-mflift2 name f x y = MStaged $ \s ->  (refine x y s s)
+mflift2 name f x y = MStaged $ \s ->  (refine x y ( prec (rounding s) (1+precision s) ) s)
     where
       refine x y sIn sOut  =
          if wi > precision sOut
            then (int, MStaged $ \s -> nextcall x' y' wi int sIn s)  -- remember current precision
-           else refine x' y' ( prec (rounding sIn) (2*precision sIn) ) sOut
+           else traceShow ("bad", name) refine x' y' ( prec (rounding sIn) (max (2*precision sIn) (precision sOut+1)) ) sOut
         where
          (x0,x') = mapprox x sIn
          (y0,y') = mapprox y sIn
-         int =  {- traceShow (name, precision sIn, precision sOut) $-} f sIn x0 y0
-         wi = width int
+         int =   traceShow (name, precision sIn, precision sOut) $ f sIn x0 y0
+         wi = traceShow (int, width int) width int
       nextcall x y wi int sIn sOut =
         if wi > precision sOut then (int, MStaged $ \s -> nextcall x y wi int sIn s)
         else refine x y ( prec (rounding sIn) (2*precision sIn) ) sOut

@@ -163,8 +163,9 @@ instance DyadicField q => ApproximateField (Interval q) where
                                                        upper = appFromRational (anti s) r}, False)
 
 width :: DyadicField q => Interval q -> Int
-width Interval{lower=a, upper=b} = if zero == diff then maxBound else (appGetExp diff)
-    where diff = appSub (precUp 0) b a
+width Interval{lower=a, upper=b} = if zero == diff then maxBound else  (appGetExp diff) --- (appGetExp sum) + 1
+    where diff = appSub (precUp 20) b a
+          sum = appAdd (precUp 20) a b
 
 split :: DyadicField q => Interval q -> (Interval q, Interval q)
 split Interval{lower=a, upper=b} =
