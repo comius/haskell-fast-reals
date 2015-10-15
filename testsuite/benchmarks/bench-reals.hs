@@ -4,9 +4,7 @@
 {--
 in rational        took    0.000573552881ms (2097151 eval in 1202.827ms)
 in real            took    0.002196396248ms (524287 eval in 1151.542ms) -- but we guessed the prec
-in stupid rec real took    45.775451612903ms (31 eval in 1419.039ms)
-smarter 58s, 18s
-getting smarter 5s, compiled is 0.6s
+in irram way 1ms 
 
 -}
 

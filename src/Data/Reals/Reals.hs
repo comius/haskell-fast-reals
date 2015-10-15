@@ -10,7 +10,6 @@ module Data.Reals.Reals (
 
 import Data.Approximate.ApproximateField
 import Debug.Trace
---import Debug.Trace
 import Data.Ratio
 import Data.Approximate.Interval
 import Data.Reals.Space
@@ -21,7 +20,7 @@ import Data.Approximate.Floating.MPFR
 -- underlying approximate field (in practiec these are dyadic rationals). @'RealNum' q@ can be used
 -- to represent not only real numbers but also the elements of the interval domain, including the
 -- back-to-front intervals.
-type RealNum q = MStaged (Interval q)
+type RealNum q = Staged (Interval q)
 
 -- | We implement a very simple show instance for reals which computes the 20th approximation
 -- and shows it as an interval, together with a floating point approximation.
@@ -29,14 +28,31 @@ instance ApproximateField q => Show (RealNum q) where
    show x = let i = approximate x (prec RoundDown 20)
             in show i
 
-flift2 f x y = Staged $ \s -> refine s s
-                  where
-                     refine s s2 = if width int > precision s
-                                     then int
-                                     else refine s ( prec (rounding s2) (2*precision s2) )
-                       where
-                          int = f s2 (approx x s2) (approx y s2)
+flift2 f x y = Staged $ \s0 ->
+  let refine s = if width result > precision s0
+                 then result
+                 else refine s3
+        where rnd = rounding s
+              pr = precision s
+              x' = approx x s
+              s1Prec = max pr (appPrec $ lower $ x')
+              s1 = prec rnd s1Prec
+              y' = approx y s1
+              s2Prec = max s1Prec (appPrec $ lower $ y')
+              s2 = prec rnd s2Prec
+              result = f s2 x' y'
+              s3 = prec rnd (2*s2Prec)
+  in refine s0
 
+
+
+bflift2 f x y = Staged $ \s -> refine s s
+                    where
+                       refine s s2 = if width int > precision s
+                                       then int
+                                       else refine s ( prec (rounding s2) (2*precision s2) )
+                         where
+                            int = f s2 (approx x s2) (approx y s2)
 
 
 --mflift2 :: (Interval q -> Interval q -> Interval q) ->  (RealNum q -> RealNum q -> RealNum q)
@@ -73,9 +89,9 @@ instance Ord (Interval q) => Ord (RealNum q) where
 
 -- | The ring structure fo the reals.
 instance (DyadicField q, ApproximateField (Interval q)) => Num (RealNum q) where
-    (+) = mflift2 "+" appAdd
-    (-) = mflift2 "-" appSub
-    (*) = mflift2 "*" appMul
+    (+) = flift2 appAdd
+    (-) = flift2 appSub
+    (*) = flift2 appMul
 
     abs = lift1 appAbs
 
@@ -85,17 +101,19 @@ instance (DyadicField q, ApproximateField (Interval q)) => Num (RealNum q) where
                       return Interval { lower = app_signum s (lower i),
                                           upper = app_signum (anti s) (upper i) --}
 
-    fromInteger k = MStaged $ \s -> (i, fromInteger k)
-                     where i = ({-traceShow ("fi",k)-} appFromInteger k)
+--    fromInteger k = MStaged $ \s -> (i, fromInteger k)
+--                    where i = ({-traceShow ("fi",k)-} appFromInteger k)
+    fromInteger k = Staged $ \s -> i
+                      where i = appFromInteger k
 
 -- | Division and reciprocals.
 instance (DyadicField q, ApproximateField (Interval q)) => Fractional (RealNum q) where
-    (/) = mflift2 "/" appDiv
+    (/) = flift2 appDiv
 
     recip = undefined --lift1 appInv
 
-    fromRational r = MStaged $ \s ->
-                                ({-traceShow ("fr",r, s)-} appFromRational s r, fromRational r)
+    fromRational r = Staged $ \s ->
+                                ({-traceShow ("fr",r, s)-} appFromRational s r )--, fromRational r)
 
 
 -- | The Hausdorff property
