@@ -17,7 +17,7 @@ import Data.Reals.Staged
 import Data.Approximate.Floating.MPFR
 
 -- | A real number is implemented as a staged dyadic interval @'Interval' q@ where @q@ is the
--- underlying approximate field (in practiec these are dyadic rationals). @'RealNum' q@ can be used
+-- underlying approximate field (in practice these are dyadic rationals). @'RealNum' q@ can be used
 -- to represent not only real numbers but also the elements of the interval domain, including the
 -- back-to-front intervals.
 type RealNum q = Staged (Interval q)
@@ -74,7 +74,7 @@ mflift2 name f x y = MStaged $ \s ->  (refine x y ( prec (rounding s) (1+precisi
 
 -- | Linear order on real numbers
 instance Ord (Interval q) => LinearOrder (RealNum q) where
-    less = lift2 (\s -> (<) )
+    less = lift2 (\s -> (<))
 
 -- | It is a bad idea to use Haskell-style inequality @/=@ on reals because it either returns @True@
 -- or it diverges. Similarly, using Haskell equality @==@ is bad. Nevertheless, we define @==@ and @/=@
