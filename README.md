@@ -52,10 +52,13 @@ Here is an example session.
     *Data.Reals.Reals> let a = 1.3 :: RealNum Rounded
     *Data.Reals.Reals> a*(1-a)
     [-3.900000000007822e-1,-3.899999999994179e-1]
-    *Data.Reals.Reals> a^200
-    [6.147102592468651e22,6.147102592468651e22]
-    *Data.Reals.Reals> 
-    *Reals> forall (ClosedInterval (0,1)) $ \x -> (x * (1 - x)) `less` exact 0.26
-    True
-    *Reals> forall (ClosedInterval (0,1)) $ \x -> (x * (1 - x)) `less` exact 0.24
-    False
+    *Data.Reals.Reals> a / a
+    [9.999999999972715e-1,1.000000000001819]
+    *Data.Reals.Reals> let b = 2.7 :: RealNum Rounded
+    *Data.Reals.Reals> a * a - b * b - (a + b) * (a - b)
+    [-3.128661774106285e-12,4.147295840103611e-12]
+    *Data.Reals.Reals> a * a
+    [1.689999999996871,1.690000000004147]
+    *Data.Reals.Reals> approx (a * a) (precUp 100)
+    [1.69,1.69]
+
