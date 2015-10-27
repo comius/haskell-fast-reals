@@ -7,9 +7,9 @@ A library for computing with exact real numbers in Haskell.
 * Haskell version 7.8.4, including Cabal
 * The [`devel-hmpfr` branch of Rounded](https://github.com/comius/rounded/tree/devel-hmpfr) library by [Ivo List](https://github.com/comius) which you can checkout with
 
-       git clone git@github.com:comius/rounded.git
-       cd rounded
-       git checkout devel-hmpfr
+        git clone git@github.com:comius/rounded.git
+        cd rounded
+        git checkout devel-hmpfr
 
 The MPFR Haskell bindings in the Rounded library rely on low-level implementation details
 of Haskell. It is likely they will break with newer versions of Haskell.
@@ -18,27 +18,27 @@ of Haskell. It is likely they will break with newer versions of Haskell.
 
 1. Install the Rounded library, following the instructions there. Essentially, it is just
 
-       cabal install
+        cabal install
 
 2. Run
 
-       cabal install
+        cabal install
 
    to install the library. To get a version of the library which allows profiling, use
    instead
 
-       cabal install --ghc-option=-fprof-auto -p --enable-executable-profiling
+        cabal install --ghc-option=-fprof-auto -p --enable-executable-profiling
 
 3. Alternatively to the previous step, you can run
 
-       cabal repl
+        cabal repl
 
    to get an interactive shell with the library preloaded. This way you can try out the
    library without installing it.
 
 4. To create HTML documentation run
 
-       cabal haddock
+        cabal haddock
 
    The generated HTML files will be placed in `dist/doc/html/`.
 
