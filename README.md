@@ -16,16 +16,13 @@ of Haskell. It is likely they will break with newer versions of Haskell.
 
 ## Installation & Usage
 
-1. Install the Rounded library, following the instructions there. Essentially, it is just
+1. Install the Rounded library, following the instructions there. Essentially, it is just a `cabal install` inside the Rounded source directory.
+
+2. To install the library, run
 
         cabal install
 
-2. Run
-
-        cabal install
-
-   to install the library. To get a version of the library which allows profiling, use
-   instead
+   To get a version of the library which allows profiling, use instead
 
         cabal install --ghc-option=-fprof-auto -p --enable-executable-profiling
 
