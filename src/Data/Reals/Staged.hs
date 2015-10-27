@@ -19,7 +19,7 @@
   sequence, so that an element of the space is represented by the datatype @'Stage' -> b@ where
   'Stage' carries rounding information and the index.
 
-  We empahsize that the rounding mode is /not/ that of floating point arithmetic. Rather, it tells
+  We emphasize that the rounding mode is /not/ that of floating point arithmetic. Rather, it tells
   us whether the exact results should be approximated from below or above in the natural order of
   approximations. Typically, computations based on domain-theoretic models always approximate from
   below, but there are uses for over-approximations as well, for example when we estimate the truth
