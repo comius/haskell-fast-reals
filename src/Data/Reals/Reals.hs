@@ -28,50 +28,6 @@ instance ApproximateField q => Show (RealNum q) where
    show x = let i = approximate x (prec RoundDown 20)
             in show i
 
-flift2 f x y = Staged $ \s0 ->
-  let refine s = if width result > precision s0
-                 then result
-                 else refine s3
-        where rnd = rounding s
-              pr = precision s
-              x' = approx x s
-              s1Prec = max pr (appPrec $ lower $ x')
-              s1 = prec rnd s1Prec
-              y' = approx y s1
-              s2Prec = max s1Prec (appPrec $ lower $ y')
-              s2 = prec rnd s2Prec
-              result = f s2 x' y'
-              s3 = prec rnd (2*s2Prec)
-  in refine s0
-
-
-
-bflift2 f x y = Staged $ \s -> refine s s
-                    where
-                       refine s s2 = if width int > precision s
-                                       then int
-                                       else refine s ( prec (rounding s2) (2*precision s2) )
-                         where
-                            int = f s2 (approx x s2) (approx y s2)
-
-
---mflift2 :: (Interval q -> Interval q -> Interval q) ->  (RealNum q -> RealNum q -> RealNum q)
-mflift2 name f x y = MStaged $ \s ->  (refine x y ( prec (rounding s) (1+precision s) ) s)
-    where
-      refine x y sIn sOut  =
-         if wi > precision sOut
-           then (int, MStaged $ \s -> nextcall x' y' wi int sIn s)  -- remember current precision
-           else traceShow ("bad", name) refine x' y' ( prec (rounding sIn) (max (2*precision sIn) (precision sOut+1)) ) sOut
-        where
-         (x0,x') = mapprox x sIn
-         (y0,y') = mapprox y sIn
-         int =   traceShow (name, precision sIn, precision sOut) $ f sIn x0 y0
-         wi = traceShow (int, width int) width int
-      nextcall x y wi int sIn sOut =
-        if wi > precision sOut then (int, MStaged $ \s -> nextcall x y wi int sIn s)
-        else refine x y ( prec (rounding sIn) (2*precision sIn) ) sOut
-
-
 -- | Linear order on real numbers
 instance Ord (Interval q) => LinearOrder (RealNum q) where
     less = lift2 (\s -> (<))
@@ -89,9 +45,9 @@ instance Ord (Interval q) => Ord (RealNum q) where
 
 -- | The ring structure fo the reals.
 instance (DyadicField q, ApproximateField (Interval q)) => Num (RealNum q) where
-    (+) = flift2 appAdd
-    (-) = flift2 appSub
-    (*) = flift2 appMul
+    (+) = lift2 appAdd
+    (-) = lift2 appSub
+    (*) = lift2 appMul
 
     abs = lift1 appAbs
 
@@ -101,16 +57,14 @@ instance (DyadicField q, ApproximateField (Interval q)) => Num (RealNum q) where
                       return Interval { lower = app_signum s (lower i),
                                           upper = app_signum (anti s) (upper i) --}
 
---    fromInteger k = MStaged $ \s -> (i, fromInteger k)
---                    where i = ({-traceShow ("fi",k)-} appFromInteger k)
     fromInteger k = Staged $ \s -> i
                       where i = appFromInteger k
 
 -- | Division and reciprocals.
 instance (DyadicField q, ApproximateField (Interval q)) => Fractional (RealNum q) where
-    (/) = flift2 appDiv
+    (/) = lift2 appDiv
 
-    recip = undefined --lift1 appInv
+    recip = lift1 appInv
 
     fromRational r = Staged $ \s ->
                                 ({-traceShow ("fr",r, s)-} appFromRational s r )--, fromRational r)
@@ -122,7 +76,7 @@ instance Ord (Interval q) => Hausdorff (RealNum q) where
 
 -- | The value @ClosedInterval(a,b)@ represents the closed interval [a,b] as a subspace of the reals.
 newtype ClosedInterval q = ClosedInterval (q, q)
-{-
+
 -- | Compactness of the closed interval
 instance (DyadicField q) => Compact (ClosedInterval q) (RealNum q) where
    forall (ClosedInterval(a,b)) p =
@@ -143,7 +97,7 @@ instance (DyadicField q) => Compact (ClosedInterval q) (RealNum q) where
                                                             (let c = midpoint a b in sweep (lst ++ [(k+1,a,c), (k+1,c,b)]))
        in sweep [(0,a,b)]
      )
-
+{-
 -- | Missing: overtness of reals, open interval (a,b) and closed interval [a,b]
 instance Overt (ClosedInterval q) (RealNum q) where
      exists (ClosedInterval (a,b)) p = error "Not implemented"

@@ -54,4 +54,8 @@ Here is an example session.
     [1.689999999996871,1.690000000004147]
     *Data.Reals.Reals> approx (a * a) (precUp 100)
     [1.69,1.69]
-
+    λ> let int =  (ClosedInterval (appFromInteger 0,appFromInteger 1))
+    λ> forall int $ \x -> (x * (1 - x)) `less` (0.24 :: RealNum Rounded )
+    False
+    λ> forall int $ \x -> (x * (1 - x)) `less` (0.26 :: RealNum Rounded )
+    True

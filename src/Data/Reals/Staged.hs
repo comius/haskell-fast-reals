@@ -37,7 +37,6 @@ module Data.Reals.Staged (
               RoundingMode (..),
               Completion (..),
               Staged (..),
-              MStaged (..)
 ) where
 
 import Data.Approximate.ApproximateField
@@ -58,7 +57,6 @@ class Applicative m => Completion m where
     getStage :: m Stage -- ^ get the current stage
     getRounding :: m RoundingMode -- ^ get the current rounding
     getPrec :: m Int -- ^ get the current precision
---    getPrec2 :: m t -> Int
 
     approximate :: m t -> Stage -> t -- ^ approximate by a chain (from above or from below, depending on rounding mode)
     limit :: (Stage -> t) -> m t -- ^ the element represented by a given chain
@@ -86,8 +84,6 @@ instance Applicative Staged where
     pure a    = Staged $ const a
     (<*>) f x = Staged $ \s -> approx f s (approx x s)
 
---    (<*>) f x = Staged $ \s -> approx f s (approx x s)
-
 -- | 'Staged' is an instance of a completion.
 instance Completion Staged where
     getStage = Staged id
@@ -95,55 +91,3 @@ instance Completion Staged where
     getPrec = Staged precision
     approximate st s = {-traceShow ("approximate", s)-} (approx st s)
     limit = Staged
-
-newtype MStaged t = MStaged { mapprox :: Stage -> (t, MStaged t) }
-
--- | The functor structure of 'Staged' is the same as that of the @Reader@ monad.
-instance Functor MStaged where
-    fmap f x = MStaged $ approx'
-      where approx' s = (f approx1, fmap f approx2 )
-             where
-                   (approx1, approx2) = mapprox x s
-
-instance Applicative MStaged where
-    pure a    = MStaged $ \s -> (a, pure a)
-    (<*>) f x = MStaged $ approx'
-                           where approx' s = (b1 a1, b2 <*> a2)
-                                                            where (a1, a2) = mapprox x s
-                                                                  (b1, b2) = mapprox f s
-
-instance Completion MStaged where
-    getStage = MStaged $ \s -> (s, getStage)
-    getRounding = MStaged $ \s -> (rounding s, getRounding)
-    getPrec = MStaged $ \s -> (precision s, getPrec)
-    approximate st s = {-traceShow ("approximate", s)-} fst (mapprox st s)
-    limit f = MStaged $ \s -> (f s, limit f)
-
-{-
-class Approximation a where
-   width :: a -> Int
-
-class ContFunctor f  where
-    fmapc        :: Approximation (f b) => (a -> b) -> f a -> f b
-
-    -- | Replace all locations in the input with the same value.
-    -- The default definition is @'fmap' . 'const'@, but this may be
-    -- overridden with a more efficient version.
-    (<$)        :: Approximation (f a) => a -> f b -> f a
-    (<$)        =  fmapc . const
-
-class ContFunctor f => ContApplicative f where
-    -- | Lift a value.
-    purec :: Approximation (f a) => a -> f a
-
-    -- | Sequential application.
-    (<*>) :: Approximation (f b) => f (a -> b) -> f a -> f b
-
-    -- | Sequence actions, discarding the value of the first argument.
-    (*>) :: f a -> f b -> f b
-    (*>) = liftA2c (const id)
-
-    -- | Sequence actions, discarding the value of the second argument.
-    (<*) :: f a -> f b -> f a
-    (<*) = liftA2c const
--}
