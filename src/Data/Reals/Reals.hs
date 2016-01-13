@@ -17,34 +17,36 @@ import Data.Reals.Staged
 import Data.Approximate.Floating.MPFR
 
 -- | A real number is implemented as a staged dyadic interval @'Interval' q@ where @q@ is the
--- underlying approximate field (in practice these are dyadic rationals). @'RealNum' q@ can be used
+-- underlying approximate field (in practice these are dyadic rationals). @'RealNumQ' q@ can be used
 -- to represent not only real numbers but also the elements of the interval domain, including the
 -- back-to-front intervals.
-type RealNum q = Staged (Interval q)
+
+type RealNumQ q = Staged (Interval q)
+type RealNum = RealNumQ Rounded
 
 -- | We implement a very simple show instance for reals which computes the 20th approximation
 -- and shows it as an interval, together with a floating point approximation.
-instance ApproximateField q => Show (RealNum q) where
+instance ApproximateField q => Show (RealNumQ q) where
    show x = let i = approximate x (prec RoundDown 20)
             in show i
 
 -- | Linear order on real numbers
-instance Ord (Interval q) => LinearOrder (RealNum q) where
+instance Ord (Interval q) => LinearOrder (RealNumQ q) where
     less = lift2 (\s -> (<))
 
 -- | It is a bad idea to use Haskell-style inequality @/=@ on reals because it either returns @True@
 -- or it diverges. Similarly, using Haskell equality @==@ is bad. Nevertheless, we define @==@ and @/=@
 -- because Haskell wants them for numeric types.
-instance Ord (Interval q) => Eq (RealNum q) where
+instance Ord (Interval q) => Eq (RealNumQ q) where
     x /= y = force $ x `apart` y
 
 -- | Real numbers are an ordered type in the sense of Haskells 'Ord', although a comparison never
 -- returns @EQ@ (instead it diverges). This is a fact of life, comparison of reals is not decidable.
-instance Ord (Interval q) => Ord (RealNum q) where
+instance Ord (Interval q) => Ord (RealNumQ q) where
   compare x y = if force (x `less` y) then LT else GT
 
 -- | The ring structure fo the reals.
-instance (DyadicField q, ApproximateField (Interval q)) => Num (RealNum q) where
+instance (DyadicField q, ApproximateField (Interval q)) => Num (RealNumQ q) where
     (+) = lift2 appAdd
     (-) = lift2 appSub
     (*) = lift2 appMul
@@ -61,7 +63,7 @@ instance (DyadicField q, ApproximateField (Interval q)) => Num (RealNum q) where
                       where i = appFromInteger k
 
 -- | Division and reciprocals.
-instance (DyadicField q, ApproximateField (Interval q)) => Fractional (RealNum q) where
+instance (DyadicField q, ApproximateField (Interval q)) => Fractional (RealNumQ q) where
     (/) = lift2 appDiv
 
     recip = lift1 appInv
@@ -71,14 +73,14 @@ instance (DyadicField q, ApproximateField (Interval q)) => Fractional (RealNum q
 
 
 -- | The Hausdorff property
-instance Ord (Interval q) => Hausdorff (RealNum q) where
+instance Ord (Interval q) => Hausdorff (RealNumQ q) where
      x `apart` y = (x `less` y) `sor` (y `less` x)
 
 -- | The value @ClosedInterval(a,b)@ represents the closed interval [a,b] as a subspace of the reals.
 newtype ClosedInterval q = ClosedInterval (q, q)
 
 -- | Compactness of the closed interval
-instance (DyadicField q) => Compact (ClosedInterval q) (RealNum q) where
+instance (DyadicField q) => Compact (ClosedInterval q) (RealNumQ q) where
    forall (ClosedInterval(a,b)) p =
      limit (\s ->
        let r = rounding s
@@ -99,14 +101,14 @@ instance (DyadicField q) => Compact (ClosedInterval q) (RealNum q) where
      )
 {-
 -- | Missing: overtness of reals, open interval (a,b) and closed interval [a,b]
-instance Overt (ClosedInterval q) (RealNum q) where
+instance Overt (ClosedInterval q) (RealNumQ q) where
      exists (ClosedInterval (a,b)) p = error "Not implemented"
 
 -- | Reals form a complete space, which means that every Cauchy sequence of reals has
 -- a limit. In the implementation this is manifested by the existence of an operator
 -- which computes the limit of a Cauchy sequence. The error bounds for the sequence are
 -- given explicitly.
-lim :: (Int -> (RealNum q, q)) -> RealNum q
+lim :: (Int -> (RealNumQ q, q)) -> RealNumQ q
 lim x =
     error "Limits of Cauchy sequences are not implemented"
     {- there are several ways to implement 'lim', see the end of Section 7 of
@@ -122,7 +124,7 @@ lim x =
 -- that we can compute arbitrarily good @q@-approximations to real numbers. The
 -- function 'approxTo x k' computes an approximation @a@ of type @q@ which is within
 -- @2^-k@ of @x@.
-approxTo :: RealNum q -> Int -> q
+approxTo :: RealNumQ q -> Int -> q
 approxTo x k =
     error "approxTo not implemented"
     {- the simplest way to implement approxTo is to keep calling

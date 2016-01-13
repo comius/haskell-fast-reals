@@ -42,12 +42,12 @@ Here is an example session.
     Preprocessing library haskell-fast-reals-0.1.0.0...
     GHCi, version 7.8.4: http://www.haskell.org/ghc/  :? for help
     <... stuff gets loaded ...>
-    *Data.Reals.Reals> let a = 1.3 :: RealNum Rounded
+    *Data.Reals.Reals> let a = 1.3 :: RealNum
     *Data.Reals.Reals> a*(1-a)
     [-3.900000000007822e-1,-3.899999999994179e-1]
     *Data.Reals.Reals> a / a
     [9.999999999972715e-1,1.000000000001819]
-    *Data.Reals.Reals> let b = 2.7 :: RealNum Rounded
+    *Data.Reals.Reals> let b = 2.7 :: RealNum
     *Data.Reals.Reals> a * a - b * b - (a + b) * (a - b)
     [-3.128661774106285e-12,4.147295840103611e-12]
     *Data.Reals.Reals> a * a
@@ -55,7 +55,7 @@ Here is an example session.
     *Data.Reals.Reals> approx (a * a) (precUp 100)
     [1.69,1.69]
     λ> let int =  (ClosedInterval (appFromInteger 0,appFromInteger 1))
-    λ> forall int $ \x -> (x * (1 - x)) `less` (0.24 :: RealNum Rounded )
+    λ> forall int $ \x -> (x * (1 - x)) `less` (0.24 :: RealNum )
     False
-    λ> forall int $ \x -> (x * (1 - x)) `less` (0.26 :: RealNum Rounded )
+    λ> forall int $ \x -> (x * (1 - x)) `less` (0.26 :: RealNum )
     True
