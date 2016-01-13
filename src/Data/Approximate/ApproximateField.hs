@@ -1,4 +1,4 @@
-{- | This module contains specification of approximate field.
+{-| This module contains specification of approximate field.
 -}
 
 module Data.Approximate.ApproximateField (
