@@ -55,4 +55,4 @@ main = do
     let z2 = f 77617 33096
     measure (\() -> z1 :: Ratio Integer)   "in rational      "
 
-    measure (\() -> approximate (z2 :: RealNum Rounded) (prec RoundDown 5))   "in real      "
+    measure (\() -> approximate (z2 :: RealNum) (prec RoundDown 5))   "in real      "
