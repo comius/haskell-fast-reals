@@ -8,7 +8,7 @@ module Data.Approximate.Floating.MPFR (Rounded)
 where
 
 import Data.Approximate.ApproximateField hiding (prec)
-import Data.Approximate.MPFRLowLevel as MPFR
+import Data.Approximate.MPFRLowLevel as MPFR hiding (max)
 --import Debug.Trace
 import Prelude hiding (isNaN,isInfinite, div)
 
@@ -39,12 +39,12 @@ instance ApproximateField Rounded where
 instance DyadicField Rounded where
   posInf = MPFR.posInf
   negInf = MPFR.negInf
-  naN = MPFR.naN
+  naN = MPFR.nan
 
   appGetExp a = {-traceShow (a,r)-} r
     where r = -fromEnum (getExp a)
   appPrec a = getPrec a
 
-  appMul2 s = mul2i (rnd s) (prec s)
+  appMul2 s = mul2i
 
   isUnordered a b = False -- TODO
