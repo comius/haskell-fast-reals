@@ -34,9 +34,11 @@
 module Data.Reals.Staged (
               prec,
               Stage (..),
+              StagedWithFun (..),
+              StagedWithList (..),
               RoundingMode (..),
               Completion (..),
-              Staged (..),
+              lift1, lift2,
 ) where
 
 import Data.Approximate.ApproximateField
@@ -54,9 +56,10 @@ import Control.Applicative
 -}
 
 class Applicative m => Completion m where
-    getStage :: m Stage -- ^ get the current stage
-    getRounding :: m RoundingMode -- ^ get the current rounding
-    getPrec :: m Int -- ^ get the current precision
+-- Removing following functions from the class definition, because they are reachable only from functional instance.
+--    getStage :: m Stage -- ^ get the current stage
+--    getRounding :: m RoundingMode -- ^ get the current rounding
+--    getPrec :: m Int -- ^ get the current precision
 
     approximate :: m t -> Stage -> t -- ^ approximate by a chain (from above or from below, depending on rounding mode)
     limit :: (Stage -> t) -> m t -- ^ the element represented by a given chain
@@ -64,30 +67,47 @@ class Applicative m => Completion m where
     embed :: t -> m t -- ^ a synonym for @return@
     embed = pure
 
-    -- | lift a map from approximations to points
-    lift1 :: (Stage -> t -> u) -> m t -> m u
-    lift1 f = liftA2 f getStage
+-- | lift a map from approximations to points
+lift1 :: (Completion m1, Completion m2) => (Stage -> t -> u) -> m1 t -> m2 u
+lift1 f xa = limit (\s -> f s (approximate xa s))
 
-    -- | lift a map of two arguments from approximations to points.
-    lift2 :: (Stage -> t -> u -> v) -> m t -> m u -> m v
-    lift2 f = liftA3 f getStage
-
+-- | lift a map of two arguments from approximations to points.
+lift2 :: (Completion m1, Completion m2, Completion m3) => (Stage -> t -> u -> v) -> m1 t -> m2 u -> m3 v
+lift2 f xa ya = limit (\s -> f s (approximate xa s) (approximate ya s))
+    
 -- | If @t@ is the type of approximations then, @Staged t@ is the type of the points of the space,
 -- represented as sequences of approximations.
-newtype Staged t = Staged { approx :: Stage -> t }
+newtype StagedWithFun t = StagedWithFun { approx :: Stage -> t }
 
 -- | The functor structure of 'Staged' is the same as that of the @Reader@ monad.
-instance Functor Staged where
-    fmap f x = Staged $ \s -> f (approx x s)
+instance Functor StagedWithFun where
+    fmap f x = StagedWithFun $ \s -> f (approx x s)
 
-instance Applicative Staged where
-    pure a    = Staged $ const a
-    (<*>) f x = Staged $ \s -> approx f s (approx x s)
+instance Applicative StagedWithFun where
+    pure a    = StagedWithFun $ const a
+    (<*>) f x = StagedWithFun $ \s -> approx f s (approx x s)
 
 -- | 'Staged' is an instance of a completion.
-instance Completion Staged where
-    getStage = Staged id
-    getRounding = Staged rounding
-    getPrec = Staged precision
+instance Completion StagedWithFun where
+--    getStage = Staged id
+--    getRounding = Staged rounding
+--    getPrec = Staged precision
     approximate st s = {-traceShow ("approximate", s)-} (approx st s)
-    limit = Staged
+    limit = StagedWithFun
+
+        
+data StagedWithList t = StagedWithList { lowerap :: [t], upperap :: [t]}
+
+instance Functor StagedWithList where
+    fmap f (StagedWithList { lowerap = lx, upperap = ux}) = StagedWithList { lowerap = fmap f lx, upperap = fmap f ux }
+
+instance Applicative StagedWithList where
+    pure a = StagedWithList { lowerap = repeat a, upperap = repeat a }
+    (StagedWithList { lowerap = lf, upperap = uf }) <*> (StagedWithList { lowerap = lx, upperap = ux}) = (StagedWithList { lowerap = zipWith ($) lf lx, upperap = zipWith ($) uf ux })
+    
+instance Completion StagedWithList where
+    approximate staged (Stage { precision = s, rounding = RoundUp }) = upperap staged !! s
+    approximate staged (Stage { precision = s, rounding = RoundDown }) = lowerap staged !! s    
+    limit f = StagedWithList { lowerap = map (\s -> f (precDown s)) [1..],
+                               upperap = map (\s -> f (precUp s)) [1..] }
+

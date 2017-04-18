@@ -14,7 +14,7 @@ module Data.Reals.Space (
 import Data.Reals.Staged
 
 -- | The Sierpinski space @Sigma@ is represented by staged booleans
-type Sigma = Staged Bool
+type Sigma = StagedWithFun Bool
 
 -- | Disjunction for Sierpinski space
 sor :: Sigma -> Sigma -> Sigma

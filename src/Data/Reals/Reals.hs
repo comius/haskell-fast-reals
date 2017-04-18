@@ -21,7 +21,7 @@ import Data.Approximate.Floating.MPFR
 -- to represent not only real numbers but also the elements of the interval domain, including the
 -- back-to-front intervals.
 
-type RealNumQ q = Staged (Interval q)
+type RealNumQ q = StagedWithList (Interval q)
 type RealNum = RealNumQ Rounded
 
 -- | We implement a very simple show instance for reals which computes the 20th approximation
@@ -33,6 +33,10 @@ instance ApproximateField q => Show (RealNumQ q) where
 -- | Linear order on real numbers
 instance Ord (Interval q) => LinearOrder (RealNumQ q) where
     less = lift2 (\s -> (<))
+
+-- | The Hausdorff property
+instance Ord (Interval q) => Hausdorff (RealNumQ q) where
+     x `apart` y = (x `less` y) `sor` (y `less` x)
 
 -- | It is a bad idea to use Haskell-style inequality @/=@ on reals because it either returns @True@
 -- or it diverges. Similarly, using Haskell equality @==@ is bad. Nevertheless, we define @==@ and @/=@
@@ -59,7 +63,7 @@ instance (DyadicField q, ApproximateField (Interval q)) => Num (RealNumQ q) wher
                       return Interval { lower = app_signum s (lower i),
                                           upper = app_signum (anti s) (upper i) --}
 
-    fromInteger k = Staged $ \s -> i
+    fromInteger k = limit $ \s -> i
                       where i = appFromInteger k
 
 -- | Division and reciprocals.
@@ -68,13 +72,8 @@ instance (DyadicField q, ApproximateField (Interval q)) => Fractional (RealNumQ 
 
     recip = lift1 appInv
 
-    fromRational r = Staged $ \s ->
+    fromRational r = limit $ \s ->
                                 ({-traceShow ("fr",r, s)-} appFromRational s r )--, fromRational r)
-
-
--- | The Hausdorff property
-instance Ord (Interval q) => Hausdorff (RealNumQ q) where
-     x `apart` y = (x `less` y) `sor` (y `less` x)
 
 -- | The value @ClosedInterval(a,b)@ represents the closed interval [a,b] as a subspace of the reals.
 newtype ClosedInterval q = ClosedInterval (q, q)
@@ -89,7 +88,7 @@ instance (DyadicField q) => Compact (ClosedInterval q) (RealNumQ q) where
                                  RoundDown -> Interval {lower = u, upper = v}
                                  RoundUp   -> let w = midpoint u v in Interval {lower = w, upper = w}
            sweep [] = True
-           sweep ((k,a,b):lst) = let x = Staged $ \s -> test_interval a b
+           sweep ((k,a,b):lst) = let x = limit $ \s -> test_interval a b
                                     in case (r, approximate (p x) (prec r k)) of
                                       (RoundDown, False) -> (k < n) &&
                                                             (let c = midpoint a b in sweep (lst ++ [(k+1,a,c), (k+1,c,b)]))
