@@ -64,32 +64,30 @@ instance DyadicField q => ApproximateField (Interval q) where
         umul = appMul (anti s)
     in {-traceShow s-} Interval { lower =
                                    case (negative a, negative b, negative c, negative d) of
+                                     (False, False, True, _) -> lmul b c
+                                     (False, False, False, _) -> lmul a c
                                      (True, True, _, True) -> lmul b d
                                      (True, True, _, False) -> lmul a d
-                                     (True, False, True, True) -> lmul b c
+                                     (True, _, False, False) -> lmul a d
+                                     (False, _, False, False) -> lmul a c
+                                     (_, False, True, True) -> lmul b c
+                                     (_, True, True, True) -> lmul b d
                                      (True, False, True, False) -> min (lmul a d) (lmul b c)
-                                     (True, False, False, True) -> zero
-                                     (True, False, False, False) -> lmul a d
-                                     (False, True, True, True) -> lmul b d
-                                     (False, True, True, False) -> zero
                                      (False, True, False, True) -> max (lmul a c) (lmul b d)
-                                     (False, True, False, False) -> lmul a c
-                                     (False, False, True, _) -> lmul b c
-                                     (False, False, False, _) -> lmul a c,
+                                     otherwise -> zero,
                                   upper =
                                    case (negative a, negative b, negative c, negative d) of
                                      (True, True, True, _) -> umul a c
                                      (True, True, False, _) -> umul b c
-                                     (True, False, True, True) -> umul a c
-                                     (True, False, True, False) -> max (umul a c) (umul b d)
-                                     (True, False, False, True) -> zero
-                                     (True, False, False, False) -> umul b d
-                                     (False, True, True, True) -> umul a d
-                                     (False, True, True, False) -> zero
-                                     (False, True, False, True) -> min (umul a d) (umul b c)
-                                     (False, True, False, False) -> umul b c
                                      (False, False, _, True) -> umul a d
                                      (False, False,_, False) -> umul b d
+                                     (True, _, True, True) -> umul a c
+                                     (False, _, True, True) -> umul a d
+                                     (_, False, False, False) -> umul b d
+                                     (_, True, False, False) -> umul b c
+                                     (True, False, True, False) -> max (umul a c) (umul b d)
+                                     (False, True, False, True) -> min (umul a d) (umul b c)
+                                     otherwise -> zero
                                 }
 
   appInv s Interval{lower=a, upper=b} =
