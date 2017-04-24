@@ -131,23 +131,16 @@ instance DyadicField q => ApproximateField (Interval q) where
     in Interval { lower = case (sgn a, sgn b) of
                              (LT, LT) -> linv b
                              (EQ, LT) -> linv b
-                             (GT, LT) -> posInf
-                             (LT, EQ) -> negInf
-                             (EQ, EQ) -> negInf
-                             (GT, EQ) -> posInf
-                             (LT, GT) -> negInf
-                             (EQ, GT) -> negInf
-                             (GT, GT) -> linv b,
+                             (GT, GT) -> linv b
+                             (GT, _) -> posInf
+                             otherwise -> negInf,
                   upper = case (sgn a, sgn b) of
                              (LT, LT) -> uinv a
-                             (EQ, LT) -> negInf
-                             (GT, LT) -> negInf
-                             (LT, EQ) -> posInf
-                             (EQ, EQ) -> posInf
                              (GT, EQ) -> uinv a
-                             (LT, GT) -> posInf
-                             (EQ, GT) -> posInf
-                             (GT, GT) -> uinv a}
+                             (GT, GT) -> uinv a
+                             (_, LT) -> negInf
+                             otherwise -> posInf
+                             }
 
   appDiv s a b = appMul s a (appInv s b)
 
