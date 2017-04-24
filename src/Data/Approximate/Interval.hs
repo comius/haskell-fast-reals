@@ -75,54 +75,22 @@ instance DyadicField q => ApproximateField (Interval q) where
                                      (False, True, False, True) -> max (lmul a c) (lmul b d)
                                      (False, True, False, False) -> lmul a c
                                      (False, False, True, _) -> lmul b c
-                                     (False, False, False, _) -> lmul a c
-                                      {- if negative a
-                                          then if negative b
-                                               then if negative d
-                                                    then lmul b d
-                                                    else lmul a d
-                                               else if negative c
-                                                    then if negative d
-                                                         then lmul b c
-                                                         else min (lmul a d) (lmul b c)
-                                                    else if negative d
-                                                         then zero
-                                                         else lmul a d
-                                          else if negative b
-                                               then if negative c
-                                                    then if negative d
-                                                         then lmul b d
-                                                         else zero
-                                                    else if negative d
-                                                         then max (lmul a c) (lmul b d)
-                                                         else lmul a c
-                                          else if negative c
-                                               then lmul b c
-                                               else lmul a c-}
-                                ,
-                                   upper = if negative a
-                                            then if negative b
-                                                 then if negative c
-                                                      then umul a c
-                                                      else umul b c
-                                                 else if negative c
-                                                      then if negative d
-                                                           then umul a c
-                                                           else max (umul a c) (umul b d)
-                                                      else if negative d
-                                                           then zero
-                                                           else umul b d
-                                            else if negative b
-                                                 then if negative c
-                                                      then if negative d
-                                                           then umul a d
-                                                           else zero
-                                                      else if negative d
-                                                           then min (umul a d) (umul b c)
-                                                           else umul b c
-                                                 else if negative d
-                                                      then umul a d
-                                                      else umul b d}
+                                     (False, False, False, _) -> lmul a c,
+                                  upper =
+                                   case (negative a, negative b, negative c, negative d) of
+                                     (True, True, True, _) -> umul a c
+                                     (True, True, False, _) -> umul b c
+                                     (True, False, True, True) -> umul a c
+                                     (True, False, True, False) -> max (umul a c) (umul b d)
+                                     (True, False, False, True) -> zero
+                                     (True, False, False, False) -> umul b d
+                                     (False, True, True, True) -> umul a d
+                                     (False, True, True, False) -> zero
+                                     (False, True, False, True) -> min (umul a d) (umul b c)
+                                     (False, True, False, False) -> umul b c
+                                     (False, False, _, True) -> umul a d
+                                     (False, False,_, False) -> umul b d
+                                }
 
   appInv s Interval{lower=a, upper=b} =
     let sgn q = compare q zero
