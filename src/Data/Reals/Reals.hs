@@ -94,14 +94,36 @@ instance (DyadicField q) => Compact (ClosedInterval q) (RealNumQ q) where
                                                             (let c = midpoint a b in sweep (lst ++ [(k+1,a,c), (k+1,c,b)]))
                                       (RoundDown, True)  -> sweep lst
                                       (RoundUp,   False) -> False
-                                      (RoundUp,   True)  -> (k >= n) ||
+                                      (RoundUp,   True)  -> if (k >= n)
+                                                            then sweep lst -- look for other counter-examples in lst
+                                                            else (let c = midpoint a b in sweep (lst ++ [(k+1,a,c), (k+1,c,b)]))
+       in sweep [(0,a,b)]
+     )
+
+-- | Overtness of reals on closed interval [a,b]
+instance (DyadicField q) => Overt (ClosedInterval q) (RealNumQ q) where
+    exists (ClosedInterval (a,b)) p =
+      limit (\s ->
+        let r = rounding s
+            n = precision s
+            test_interval u v = case r of
+                                  RoundUp   -> Interval {lower = v, upper = u}
+                                  RoundDown -> let w = midpoint u v in Interval {lower = w, upper = w}
+            sweep [] = False
+            sweep ((k,a,b):lst) = let x = limit $ \s -> test_interval a b
+                                    in case (r, approximate (p x) (prec r k)) of
+                                      (RoundDown, False) -> if (k >= n) 
+                                                            then sweep lst
+                                                            else (let c = midpoint a b in sweep (lst ++ [(k+1,a,c), (k+1,c,b)]))
+                                      (RoundDown, True)  -> True
+                                      (RoundUp,   False) -> sweep lst
+                                      (RoundUp,   True)  -> (k >= n) || -- conuterexamples exhausted on this interval
                                                             (let c = midpoint a b in sweep (lst ++ [(k+1,a,c), (k+1,c,b)]))
        in sweep [(0,a,b)]
      )
+
+
 {-
--- | Missing: overtness of reals, open interval (a,b) and closed interval [a,b]
-instance Overt (ClosedInterval q) (RealNumQ q) where
-     exists (ClosedInterval (a,b)) p = error "Not implemented"
 
 -- | Reals form a complete space, which means that every Cauchy sequence of reals has
 -- a limit. In the implementation this is manifested by the existence of an operator
