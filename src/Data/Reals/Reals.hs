@@ -92,7 +92,7 @@ instance (DyadicField q) => Compact (ClosedInterval q) (RealNumQ q) where
                                     in case (r, approximate (p x) (prec r k)) of
                                       (RoundDown, False) -> (k < n) &&
                                                             (let c = midpoint a b in sweep (lst ++ [(k+1,a,c), (k+1,c,b)]))
-                                      (RoundDown, True)  -> sweep lst
+                                      (RoundDown, True)  -> sweep lst -- this result should stop subdivision in RoundUp case
                                       (RoundUp,   False) -> False
                                       (RoundUp,   True)  -> if (k >= n)
                                                             then sweep lst -- look for other counter-examples in lst
@@ -116,7 +116,7 @@ instance (DyadicField q) => Overt (ClosedInterval q) (RealNumQ q) where
                                                             then sweep lst
                                                             else (let c = midpoint a b in sweep (lst ++ [(k+1,a,c), (k+1,c,b)]))
                                       (RoundDown, True)  -> True
-                                      (RoundUp,   False) -> sweep lst
+                                      (RoundUp,   False) -> sweep lst -- this result should stop subdivision also in RoundDown case
                                       (RoundUp,   True)  -> (k >= n) || -- conuterexamples exhausted on this interval
                                                             (let c = midpoint a b in sweep (lst ++ [(k+1,a,c), (k+1,c,b)]))
        in sweep [(0,a,b)]
