@@ -27,7 +27,7 @@ type RealNum = RealNumQ Rounded
 -- | We implement a very simple show instance for reals which computes the 20th approximation
 -- and shows it as an interval, together with a floating point approximation.
 instance ApproximateField q => Show (RealNumQ q) where
-   show x = let i = approximate x (prec RoundDown 20)
+   show x = let i = Data.Reals.Staged.lower $ approximate x 20
             in show i
 
 -- | Linear order on real numbers
@@ -63,7 +63,7 @@ instance (DyadicField q, ApproximateField (Interval q)) => Num (RealNumQ q) wher
                       return Interval { lower = app_signum s (lower i),
                                           upper = app_signum (anti s) (upper i) --}
 
-    fromInteger k = limit $ \s -> i
+    fromInteger k = limit $ \s -> Approximation i i
                       where i = appFromInteger k
 
 -- | Division and reciprocals.
@@ -72,36 +72,46 @@ instance (DyadicField q, ApproximateField (Interval q)) => Fractional (RealNumQ 
 
     recip = lift1 appInv
 
-    fromRational r = limit $ \s ->
-                                ({-traceShow ("fr",r, s)-} appFromRational s r )--, fromRational r)
+    fromRational r = limit $ \p -> Approximation (appFromRational (precDown p) r) (appFromRational (precUp p) r)
+                               -- ({-traceShow ("fr",r, s)-} appFromRational s r )--, fromRational r)
 
 -- | The value @ClosedInterval(a,b)@ represents the closed interval [a,b] as a subspace of the reals.
 newtype ClosedInterval q = ClosedInterval (q, q)
 
+{-
+Comparison of using (prec, rounding) -> approximation vs. prec -> (lower, upper):
+*Data.Reals.Reals> forall int $ \x -> (x * (1 - x)) `less` (0.252 :: RealNum )
+True
+(0.14 secs, 39248160 bytes)
+(0.07 secs, 22814536 bytes)
+*Data.Reals.Reals> forall int $ \x -> (x * (1 - x)) `less` (0.251 :: RealNum )
+True
+(0.24 secs, 77898296 bytes)
+(0.09 secs, 22712824 bytes)
+*Data.Reals.Reals> forall int $ \x -> (x * (1 - x)) `less` (0.2501 :: RealNum )
+True
+(2.40 secs, 1506857904 bytes)
+(0.26 secs, 90595272 bytes)
+-}
+
 -- | Compactness of the closed interval
 instance (DyadicField q) => Compact (ClosedInterval q) (RealNumQ q) where
    forall (ClosedInterval(a,b)) p =
-     limit (\s ->
-       let r = rounding s
-           n = precision s
-           test_interval u v = case r of
-                                 RoundDown -> Interval {lower = u, upper = v}
-                                 RoundUp   -> let w = midpoint u v in Interval {lower = w, upper = w}
-           sweep [] = True
-           sweep ((k,a,b):lst) = let x = limit $ \s -> test_interval a b
-                                    in case (r, approximate (p x) (prec r k)) of
-                                      (RoundDown, False) -> (k < n) &&
-                                                            (let c = midpoint a b in sweep (lst ++ [(k+1,a,c), (k+1,c,b)]))
-                                      (RoundDown, True)  -> sweep lst -- this result should stop subdivision in RoundUp case
-                                      (RoundUp,   False) -> False
-                                      (RoundUp,   True)  -> if (k >= n)
-                                                            then sweep lst -- look for other counter-examples in lst
-                                                            else (let c = midpoint a b in sweep (lst ++ [(k+1,a,c), (k+1,c,b)]))
+     limit (\n ->
+       let test_interval u v = Approximation (Interval u v) (let w = midpoint u v in Interval w w)
+           sweep [] = Approximation True True
+           sweep ((k,a,b):lst) = let x = limit $ \n -> test_interval a b
+                                     ap = approximate (p x) k
+                                  in case (Data.Reals.Staged.lower ap, Data.Reals.Staged.upper ap) of
+                                      (True, _) -> sweep lst
+                                      (_, False) -> Approximation False False
+                                      otherwise -> if (k >= n) then Approximation False True
+                                                               else (let c = midpoint a b in sweep (lst ++ [(k+1,a,c), (k+1,c,b)]))
        in sweep [(0,a,b)]
      )
 
 -- | Overtness of reals on closed interval [a,b]
-instance (DyadicField q) => Overt (ClosedInterval q) (RealNumQ q) where
+{-instance (DyadicField q) => Overt (ClosedInterval q) (RealNumQ q) where
     exists (ClosedInterval (a,b)) p =
       limit (\s ->
         let r = rounding s
@@ -121,7 +131,7 @@ instance (DyadicField q) => Overt (ClosedInterval q) (RealNumQ q) where
                                                             (let c = midpoint a b in sweep (lst ++ [(k+1,a,c), (k+1,c,b)]))
        in sweep [(0,a,b)]
      )
-
+--}
 
 {-
 

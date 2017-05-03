@@ -29,9 +29,10 @@ sand = lift2 (\s p q -> p && q)
 force :: Sigma -> Bool
 force p = loop 0
           where loop k
-                   | approximate p (prec RoundDown k) = True -- lower approximation is True, the value is top
-                   | not (approximate p (prec RoundUp k)) = False -- upper approximation is False, the value is bottom
+                   | lower a = True -- lower approximation is True, the value is top
+                   | not (upper a) = False -- upper approximation is False, the value is bottom
                    | otherwise = loop (k+1)
+                 where a = approximate p k
 
 -- | The Show instance may cause divergence because 'force' could diverge. An alternative
 -- implementation would give up after a while, and the user would have to use 'force' explicitly to

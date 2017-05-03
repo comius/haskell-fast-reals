@@ -52,7 +52,7 @@ Here is an example session.
     [-3.128661774106285e-12,4.147295840103611e-12]
     *Data.Reals.Reals> a * a
     [1.689999999996871,1.690000000004147]
-    *Data.Reals.Reals> approx (a * a) (precUp 100)
+    *Data.Reals.Reals> Data.Reals.Staged.lower $ approximate (a * a) 100
     [1.69,1.69]
     λ> let int =  (ClosedInterval (appFromInteger 0,appFromInteger 1))
     λ> forall int $ \x -> (x * (1 - x)) `less` (0.24 :: RealNum )

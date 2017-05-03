@@ -34,16 +34,22 @@
 module Data.Reals.Staged (
               prec,
               Stage (..),
+              Approximation (..),
               StagedWithFun (..),
               StagedWithList (..),
               RoundingMode (..),
               Completion (..),
-              lift1, lift2,
+              lift1, lift2
 ) where
 
 import Data.Approximate.ApproximateField
 import Control.Applicative
 --import Debug.Trace
+
+{- | The 'Approximation' type combines upper and lower approximation, as it can be more efficient
+   to compute them at the same time -}
+data Approximation t = Approximation { lower :: t, upper :: t}
+                       deriving Show
 
 {- | The 'Completion' class represents a completion operation. An instance @m@ of class 'Completion'
    is a type constructor which takes a type @b@ representing the base, i.e., the approximations, and
@@ -61,53 +67,59 @@ class Applicative m => Completion m where
 --    getRounding :: m RoundingMode -- ^ get the current rounding
 --    getPrec :: m Int -- ^ get the current precision
 
-    approximate :: m t -> Stage -> t -- ^ approximate by a chain (from above or from below, depending on rounding mode)
-    limit :: (Stage -> t) -> m t -- ^ the element represented by a given chain
+    approximate :: m t -> Int -> Approximation t -- ^ approximate by a chain (from above or from below, depending on rounding mode)
+    limit :: (Int -> Approximation t) -> m t -- ^ the element represented by a given chain
 
     embed :: t -> m t -- ^ a synonym for @return@
     embed = pure
 
 -- | lift a map from approximations to points
 lift1 :: (Completion m1, Completion m2) => (Stage -> t -> u) -> m1 t -> m2 u
-lift1 f xa = limit (\s -> f s (approximate xa s))
+lift1 f x = limit (\p -> let xa = approximate x p in
+                          Approximation (f (precDown p) (lower xa)) (f (precUp p) (upper xa)))
 
 -- | lift a map of two arguments from approximations to points.
 lift2 :: (Completion m1, Completion m2, Completion m3) => (Stage -> t -> u -> v) -> m1 t -> m2 u -> m3 v
-lift2 f xa ya = limit (\s -> f s (approximate xa s) (approximate ya s))
-    
+lift2 f x y = limit (\p -> let xa = approximate x p
+                               ya = approximate y p
+                           in Approximation (f (precDown p) (lower xa) (lower ya)) (f (precUp p) (upper xa) (upper ya)))
+
+
+instance Functor Approximation where
+    fmap f s = Approximation (f $ lower s) (f $ upper s)
+
+instance Applicative Approximation where
+    pure a = Approximation a a
+    f <*> x = Approximation (lower f (lower x)) (upper f (upper x))
+
 -- | If @t@ is the type of approximations then, @Staged t@ is the type of the points of the space,
 -- represented as sequences of approximations.
-newtype StagedWithFun t = StagedWithFun { approx :: Stage -> t }
 
--- | The functor structure of 'Staged' is the same as that of the @Reader@ monad.
+newtype StagedWithFun t = StagedWithFun { fapprox :: Int -> Approximation t }
+
 instance Functor StagedWithFun where
-    fmap f x = StagedWithFun $ \s -> f (approx x s)
+    fmap f x = StagedWithFun $ \s -> (fmap f) (fapprox x s)
 
 instance Applicative StagedWithFun where
-    pure a    = StagedWithFun $ const a
-    (<*>) f x = StagedWithFun $ \s -> approx f s (approx x s)
+    pure a    = StagedWithFun $ const $ pure a
+    (<*>) f x = StagedWithFun $ \s -> fapprox f s <*> (fapprox x s)
 
 -- | 'Staged' is an instance of a completion.
 instance Completion StagedWithFun where
---    getStage = Staged id
---    getRounding = Staged rounding
---    getPrec = Staged precision
-    approximate st s = {-traceShow ("approximate", s)-} (approx st s)
+    approximate st s = {-traceShow ("approximate", s)-} (fapprox st s)
     limit = StagedWithFun
 
-        
-data StagedWithList t = StagedWithList { lowerap :: [t], upperap :: [t]}
+
+newtype StagedWithList t = StagedWithList { approx :: [Approximation t] }
 
 instance Functor StagedWithList where
-    fmap f (StagedWithList { lowerap = lx, upperap = ux}) = StagedWithList { lowerap = fmap f lx, upperap = fmap f ux }
+    fmap f s = StagedWithList $ fmap (fmap f) (approx s) -- first fmap is on list, second fmap is on Approximation
 
 instance Applicative StagedWithList where
-    pure a = StagedWithList { lowerap = repeat a, upperap = repeat a }
-    (StagedWithList { lowerap = lf, upperap = uf }) <*> (StagedWithList { lowerap = lx, upperap = ux}) = (StagedWithList { lowerap = zipWith ($) lf lx, upperap = zipWith ($) uf ux })
-    
+    pure a = StagedWithList $ repeat $ pure a -- this is why we defined StagedWithList instead of just [t], since pure from Applicative [] doesn't repeat
+    a <*> b = StagedWithList $ zipWith (<*>) (approx a) (approx b)
+
 instance Completion StagedWithList where
-    approximate staged (Stage { precision = s, rounding = RoundUp }) = upperap staged !! s
-    approximate staged (Stage { precision = s, rounding = RoundDown }) = lowerap staged !! s    
-    limit f = StagedWithList { lowerap = map (\s -> f (precDown s)) [1..],
-                               upperap = map (\s -> f (precUp s)) [1..] }
+    approximate staged prec = (approx staged) !! prec
+    limit f = StagedWithList $ fmap f [1..]
 
