@@ -100,13 +100,13 @@ instance (DyadicField q) => Compact (ClosedInterval q) (RealNumQ q) where
      limit (\n ->
        let test_interval u v = Approximation (Interval u v) (let w = midpoint u v in Interval w w)
            sweep [] = Approximation True True
-           sweep ((k,a,b):lst) = let x = limit $ \n -> test_interval a b
+           sweep ((k,a,b):lst) = let x = limit $ let t = test_interval a b in \n -> t
                                      ap = approximate (p x) k
                                   in case (Data.Reals.Staged.lower ap, Data.Reals.Staged.upper ap) of
                                       (True, _) -> sweep lst
                                       (_, False) -> Approximation False False
                                       otherwise -> if (k >= n) then Approximation False (Data.Reals.Staged.upper $ sweep lst)
-                                                               else (let c = midpoint a b in sweep (lst ++ [(k+1,a,c), (k+1,c,b)]))
+                                                               else (let c = midpoint a b in sweep ((k+1,a,c) : (k+1,c,b) : lst))
        in sweep [(0,a,b)]
      )
 
@@ -116,13 +116,13 @@ instance (DyadicField q) => Overt (ClosedInterval q) (RealNumQ q) where
       limit (\n ->
         let test_interval u v = Approximation (let w = midpoint u v in Interval w w) (Interval v u)
             sweep [] = Approximation False False
-            sweep ((k,a,b):lst) = let x = limit $ \n -> test_interval a b
+            sweep ((k,a,b):lst) = let x = limit $ let t = test_interval a b in \n -> t
                                       ap = approximate (p x) k
                                     in case (Data.Reals.Staged.lower ap, Data.Reals.Staged.upper ap) of
                                       (True, _)  -> Approximation True True
                                       (_, False) -> sweep lst
                                       otherwise-> if (k >= n) then Approximation (Data.Reals.Staged.lower $ sweep lst) True
-                                                              else (let c = midpoint a b in sweep (lst ++ [(k+1,a,c), (k+1,c,b)]))
+                                                              else (let c = midpoint a b in sweep ((k+1,a,c) : (k+1,c,b) : lst))
        in sweep [(0,a,b)]
      )
 
