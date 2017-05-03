@@ -87,11 +87,11 @@ True
 *Data.Reals.Reals> forall int $ \x -> (x * (1 - x)) `less` (0.251 :: RealNum )
 True
 (0.24 secs, 77898296 bytes)
-(0.09 secs, 22712824 bytes)
+(0.07 secs, 22766448 bytes)
 *Data.Reals.Reals> forall int $ \x -> (x * (1 - x)) `less` (0.2501 :: RealNum )
 True
 (2.40 secs, 1506857904 bytes)
-(0.26 secs, 90595272 bytes)
+(0.20 secs, 68443912 bytes)
 -}
 
 -- | Compactness of the closed interval
@@ -105,33 +105,27 @@ instance (DyadicField q) => Compact (ClosedInterval q) (RealNumQ q) where
                                   in case (Data.Reals.Staged.lower ap, Data.Reals.Staged.upper ap) of
                                       (True, _) -> sweep lst
                                       (_, False) -> Approximation False False
-                                      otherwise -> if (k >= n) then Approximation False True
+                                      otherwise -> if (k >= n) then Approximation False (Data.Reals.Staged.upper $ sweep lst)
                                                                else (let c = midpoint a b in sweep (lst ++ [(k+1,a,c), (k+1,c,b)]))
        in sweep [(0,a,b)]
      )
 
 -- | Overtness of reals on closed interval [a,b]
-{-instance (DyadicField q) => Overt (ClosedInterval q) (RealNumQ q) where
+instance (DyadicField q) => Overt (ClosedInterval q) (RealNumQ q) where
     exists (ClosedInterval (a,b)) p =
-      limit (\s ->
-        let r = rounding s
-            n = precision s
-            test_interval u v = case r of
-                                  RoundUp   -> Interval {lower = v, upper = u}
-                                  RoundDown -> let w = midpoint u v in Interval {lower = w, upper = w}
-            sweep [] = False
-            sweep ((k,a,b):lst) = let x = limit $ \s -> test_interval a b
-                                    in case (r, approximate (p x) (prec r k)) of
-                                      (RoundDown, False) -> if (k >= n) 
-                                                            then sweep lst
-                                                            else (let c = midpoint a b in sweep (lst ++ [(k+1,a,c), (k+1,c,b)]))
-                                      (RoundDown, True)  -> True
-                                      (RoundUp,   False) -> sweep lst -- this result should stop subdivision also in RoundDown case
-                                      (RoundUp,   True)  -> (k >= n) || -- conuterexamples exhausted on this interval
-                                                            (let c = midpoint a b in sweep (lst ++ [(k+1,a,c), (k+1,c,b)]))
+      limit (\n ->
+        let test_interval u v = Approximation (let w = midpoint u v in Interval w w) (Interval v u)
+            sweep [] = Approximation False False
+            sweep ((k,a,b):lst) = let x = limit $ \n -> test_interval a b
+                                      ap = approximate (p x) k
+                                    in case (Data.Reals.Staged.lower ap, Data.Reals.Staged.upper ap) of
+                                      (True, _)  -> Approximation True True
+                                      (_, False) -> sweep lst
+                                      otherwise-> if (k >= n) then Approximation (Data.Reals.Staged.lower $ sweep lst) True
+                                                              else (let c = midpoint a b in sweep (lst ++ [(k+1,a,c), (k+1,c,b)]))
        in sweep [(0,a,b)]
      )
---}
+
 
 {-
 
