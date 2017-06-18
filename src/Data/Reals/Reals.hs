@@ -154,6 +154,10 @@ estimate f (ClosedInterval (x,y)) =
           leU = if ld == zero then negInf else xm `subU` (lf `divU` ld) :: Rounded
           ueD = if ud == zero then posInf else xm `subD` (lf `divD` ud) :: Rounded
           ueU = if ud == zero then negInf else xm `subU` (lf `divU` ud) :: Rounded
+          ugD = xm `subD` (uf `divD` ud) :: Rounded
+          ugU = xm `subU` (uf `divU` ud) :: Rounded
+          lgD = xm `subD` (uf `divD` ld) :: Rounded
+          lgU = xm `subU` (uf `divU` ld) :: Rounded
           (lb,ub) = case (lf < zero, zero < ld, ud < zero) of
                       (True,  True, _)    -> (leU,    posInf)
                       (True,  _,    True) -> (negInf, ueD)
@@ -161,8 +165,15 @@ estimate f (ClosedInterval (x,y)) =
                       (False, True, _)    -> (ueU,    posInf)
                       (False, _,    True) -> (negInf, leD)
                       (False, _,    _)    -> (ueU,    leD)
+          (lc,uc) = case (uf < zero, zero < ld, ud < zero) of
+                      (True,  True, _)    -> (negInf, ugD)
+                      (True,  _,    True) -> (lgU, posInf)
+                      (True,  _,    _)    -> (lgU, ugD)
+                      (False, True, _)    -> (negInf, lgD)
+                      (False, _,    True) -> (ugU, posInf)
+                      (False, _,    _)    -> (posInf, negInf)
 --          z = x 
-      in traceShow("imed", xm,lf,ld,ud,leD,ueD) $ Approximation (Interval lb ub) (Interval lb ub) -- (max lb x) (min ub y)) (Interval ld ud)
+      in traceShow("imed", xm,lf,ld,ud,leD,ueD) $ Approximation (Interval lc uc) (Interval lb ub) -- (max lb x) (min ub y)) (Interval ld ud)
     ) :: RealNum
 {-
 
