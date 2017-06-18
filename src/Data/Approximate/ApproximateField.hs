@@ -88,7 +88,7 @@ class ApproximateField q => DyadicField q where
   -- additional operations
   --  toFloat :: q -> Double
   appMul2 :: Stage -> q -> Int -> q  -- ^ shift by a power of 2
-  appMul2 s q i = appMul s q (appFromInteger (toInteger i))
+--  appMul2 s q i = appMul s q (appFromInteger (toInteger i)) --ERROR!!
 
   {-| Exact midpoint -}
   midpoint :: q -> q -> q
