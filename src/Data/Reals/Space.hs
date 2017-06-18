@@ -3,6 +3,7 @@
 -- | Basic definitions od spaces and their properties
 
 module Data.Reals.Space (
+             Sigma (..),
              sor, sand, force,
              Hausdorff  (..),
              Discrete (..),
@@ -65,9 +66,9 @@ class Overt s t | s -> t where
 
 -- | The real numbers are strictly linearly ordered by open relation <, we define
 -- a class that expresses that fact.
-class LinearOrder t where
-  less :: t -> t -> Sigma
-  more :: t -> t -> Sigma
+class LinearOrder t s where
+  less :: t -> t -> s
+  more :: t -> t -> s
 
   -- default implemetnation of 'more' in terms of 'less'
   more x y = less y x

@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts, TypeSynonymInstances, MultiParamTypeClasses, FlexibleInstances #-}
+{-# LANGUAGE Rank2Types #-}
 
 {- | We implement real numbers as the completion of dyadic intervals. The whole construction is
    parametrized by an approximate field, an example of which is "Dyadic".
@@ -15,6 +16,8 @@ import Data.Approximate.Interval
 import Data.Reals.Space
 import Data.Reals.Staged
 import Data.Approximate.Floating.MPFR
+import Numeric.AD.Internal.Forward
+import Numeric.AD.Internal.Type
 
 -- | A real number is implemented as a staged dyadic interval @'Interval' q@ where @q@ is the
 -- underlying approximate field (in practice these are dyadic rationals). @'RealNumQ' q@ can be used
@@ -27,11 +30,13 @@ type RealNum = RealNumQ Rounded
 -- | We implement a very simple show instance for reals which computes the 20th approximation
 -- and shows it as an interval, together with a floating point approximation.
 instance ApproximateField q => Show (RealNumQ q) where
-   show x = let i = Data.Reals.Staged.lower $ approximate x 20
-            in show i
+   show x = let a = approximate x 20 
+                i = Data.Reals.Staged.lower $ a
+                j = Data.Reals.Staged.upper $ a
+            in show (i,j)
 
 -- | Linear order on real numbers
-instance Ord (Interval q) => LinearOrder (RealNumQ q) where
+instance Ord (Interval q) => LinearOrder (RealNumQ q) Sigma where
     less = lift2 (\s -> (<))
 
 -- | The Hausdorff property
@@ -103,8 +108,8 @@ instance (DyadicField q) => Compact (ClosedInterval q) (RealNumQ q) where
            sweep ((k,a,b):lst) = let x = limit $ let t = test_interval a b in \n -> t
                                      ap = approximate (p x) k
                                   in case (Data.Reals.Staged.lower ap, Data.Reals.Staged.upper ap) of
-                                      (True, _) -> sweep lst
-                                      (_, False) -> Approximation False False
+                                      (True, _) -> traceShow ("holds", n,a,b) $ sweep lst
+                                      (_, False) -> traceShow ("proof", midpoint a b) $ Approximation False False
                                       otherwise -> if (k >= n) then Approximation False (Data.Reals.Staged.upper $ sweep lst)
                                                                else (let c = midpoint a b in sweep ((k+1,a,c) : (k+1,c,b) : lst))
        in sweep [(0,a,b)]
@@ -119,14 +124,46 @@ instance (DyadicField q) => Overt (ClosedInterval q) (RealNumQ q) where
             sweep ((k,a,b):lst) = let x = limit $ let t = test_interval a b in \n -> t
                                       ap = approximate (p x) k
                                     in case (Data.Reals.Staged.lower ap, Data.Reals.Staged.upper ap) of
-                                      (True, _)  -> Approximation True True
-                                      (_, False) -> sweep lst
+                                      (True, _)  -> traceShow ("witness ", midpoint a b) $ Approximation True True
+                                      (_, False) -> traceShow ("not in ",a,b) $ sweep lst
                                       otherwise-> if (k >= n) then Approximation (Data.Reals.Staged.lower $ sweep lst) True
                                                               else (let c = midpoint a b in sweep ((k+1,a,c) : (k+1,c,b) : lst))
        in sweep [(0,a,b)]
      )
 
+data Estimate a
+  = Estimate a a deriving (Show)
 
+instance Fractional a => LinearOrder (Forward a) (Estimate a) where
+   less a b = Estimate (primal a - primal b) (tangent a - tangent b)
+
+--estimate :: (LinearOrder t s, Fractional t) => (t -> s) -> ClosedInterval Rounded -> RealNum
+estimate f (ClosedInterval (x,y)) = 
+    limit (\n ->
+      let test_interval u v = (limit $ \n -> (Approximation (Interval u v) (let w = midpoint u v in Interval w w))) :: RealNum
+          i = test_interval x y
+          xm = midpoint x y
+          Estimate valueapp derivativeapp = (apply f i) :: Estimate RealNum
+          Interval lf uf = Data.Reals.Staged.upper $ approximate valueapp n
+          Interval ld ud = Data.Reals.Staged.lower $ approximate derivativeapp n
+          subU = appSub (precUp n)
+          divU = appDiv (precUp n)
+          subD = appSub (precDown n)
+          divD = appDiv (precDown n)          
+          leD = if ld == zero then posInf else xm `subD` (lf `divD` ld) :: Rounded
+          leU = if ld == zero then negInf else xm `subU` (lf `divU` ld) :: Rounded
+          ueD = if ud == zero then posInf else xm `subD` (lf `divD` ud) :: Rounded
+          ueU = if ud == zero then negInf else xm `subU` (lf `divU` ud) :: Rounded
+          (lb,ub) = case (lf < zero, zero < ld, ud < zero) of
+                      (True,  True, _)    -> (leU,    posInf)
+                      (True,  _,    True) -> (negInf, ueD)
+                      (True,  _,    _)    -> (posInf, negInf)
+                      (False, True, _)    -> (ueU,    posInf)
+                      (False, _,    True) -> (negInf, leD)
+                      (False, _,    _)    -> (ueU,    leD)
+--          z = x 
+      in traceShow("imed", xm,lf,ld,ud,leD,ueD) $ Approximation (Interval lb ub) (Interval lb ub) -- (max lb x) (min ub y)) (Interval ld ud)
+    ) :: RealNum
 {-
 
 -- | Reals form a complete space, which means that every Cauchy sequence of reals has
