@@ -4,27 +4,39 @@
 
 module Data.Reals.Space (
              Sigma (..),
-             sor, sand, force,
+             Lattice (..), force,
              Hausdorff  (..),
              Discrete (..),
-             Compact (..),
+             Compact (..), Compact2 (..),
              Overt (..),
              LinearOrder (..)
 ) where
 
 import Data.Reals.Staged
 
+class Lattice s where
+    sor :: s -> s -> s
+    sand :: s -> s -> s
+
 -- | The Sierpinski space @Sigma@ is represented by staged booleans
 type Sigma = StagedWithFun Bool
 
--- | Disjunction for Sierpinski space
-sor :: Sigma -> Sigma -> Sigma
-sor = lift2 (\s p q -> p || q)
 
--- | Conjunction for Sierpinski space
-sand :: Sigma -> Sigma -> Sigma
-sand = lift2 (\s p q -> p && q)
+instance Lattice Sigma where
+    -- | Disjunction for Sierpinski space
+    sor = lift2 (\s p q -> p || q)
 
+    -- | Conjunction for Sierpinski space
+    sand = lift2 (\s p q -> p && q)
+    -- A slighltly optimized version of sand.
+{-    sand x y = limit (\p -> let xa = approximate x p
+                                ya = approximate y p
+                                lapp = (lower xa) && (lower ya)
+                                uapp = (upper xa) && (upper ya)
+                            in if uapp then Approximation lapp True
+                                       else Approximation False False)
+                                       -}
+                                       
 -- | Force a value in the Sierpinski space into Booleans. This may diverge as bottom cannot be
 -- reliably detected.
 force :: Sigma -> Bool
@@ -56,6 +68,10 @@ class Discrete t where
 -- map from @t -> 'Sigma'@ to 'Sigma'.
 class Compact s t | s -> t where
   forall :: s -> (t -> Sigma) -> Sigma
+
+class (LinearOrder t l) => Compact2 s t l where
+  forall2 :: s -> (t -> l) -> Sigma
+
 
 -- | Suppose the type 's' represents a family of subspaces of 't'. The typical example is
 -- that 't' is the type of reals and 's' is the type of closed intervals. Then the subspaces

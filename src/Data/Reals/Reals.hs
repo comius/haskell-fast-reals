@@ -104,6 +104,23 @@ instance (DyadicField q) => Compact (ClosedInterval q) (RealNumQ q) where
    forall (ClosedInterval(a,b)) p =
      limit (\n ->
        let test_interval u v = Approximation (Interval u v) (let w = midpoint u v in Interval w w)
+           x = limit $ let t = test_interval a b in \n -> t
+           ap = approximate (p x) 0
+           p2 x = limit $ \k -> approximate (p x) (k+1)
+       in case (Data.Reals.Staged.lower ap, Data.Reals.Staged.upper ap) of
+            (True, _) -> {-traceShow ("holds", a,b)$-} Approximation True True
+            (_, False) -> {-traceShow ("proof", midpoint a b) $-} Approximation False False
+            otherwise -> if n <= 0 then Approximation False True
+                                   else let c = midpoint a b in approximate (sand (forall (ClosedInterval(a,c)) p2) (forall (ClosedInterval(c,b)) p2)) (n-1)
+     )
+     --          if (k >= n) then Approximation False (Data.Reals.Staged.upper $ sweep lst)
+
+{-     
+instance (DyadicField q, LinearOrder t l) => Compact2 (ClosedInterval q) t l where
+   forall2 i@(ClosedInterval(a,b)) p =
+     limit (\n ->
+       let test_interval u v = Approximation (Interval u v) (let w = midpoint u v in Interval w w)
+     --      zblj = estimate p i
            sweep [] = Approximation True True
            sweep ((k,a,b):lst) = let x = limit $ let t = test_interval a b in \n -> t
                                      ap = approximate (p x) k
@@ -114,7 +131,7 @@ instance (DyadicField q) => Compact (ClosedInterval q) (RealNumQ q) where
                                                                else (let c = midpoint a b in sweep ((k+1,a,c) : (k+1,c,b) : lst))
        in sweep [(0,a,b)]
      )
-
+  -}   
 -- | Overtness of reals on closed interval [a,b]
 instance (DyadicField q) => Overt (ClosedInterval q) (RealNumQ q) where
     exists (ClosedInterval (a,b)) p =
