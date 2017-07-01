@@ -148,50 +148,73 @@ instance (DyadicField q) => Overt (ClosedInterval q) (RealNumQ q) where
        in sweep [(0,a,b)]
      )
 
-data Estimate a
-  = Estimate a a deriving (Show)
 
-instance Fractional a => LinearOrder (Forward a) (Estimate a) where
-   less a b = Estimate (primal a - primal b) (tangent a - tangent b)
+type Estimate = StagedWithFun ([Interval Rounded])
 
---estimate :: (LinearOrder t s, Fractional t) => (t -> s) -> ClosedInterval Rounded -> RealNum
+instance Lattice [Interval Rounded] where
+  sand _ [] = []
+  sand [] _ = []
+  sand ((Interval a1 b1):c1) ((Interval a2 b2):c2)
+      | a1 > a2 = sand ((Interval a2 b2):c2) ((Interval a1 b1):c1)
+      | a2 < b1 = (Interval a2 b1):(sand c1 ((Interval b1 b2):c2))
+      | otherwise = sand c1 ((Interval a2 b2):c2)
+  sor x [] = x
+  sor [] x = x
+  sor ((Interval a1 b1):c1) ((Interval a2 b2):c2)
+      | a1 > a2 = sor ((Interval a2 b2):c2) ((Interval a1 b1):c1)
+      | a2 < b1 = sor ((Interval a1 b2):c2) c1
+      | otherwise = (Interval a1 b1):(sor ((Interval a2 b2):c2) c1)
+
+instance Lattice Estimate where
+  sand = lift2 (\n -> sand)
+  sor = lift2 (\n -> sor)
+
+instance LinearOrder (Forward RealNum) (Estimate) where
+   less a b =   
+     limit (\n ->
+      let valueapp = primal a - primal b :: RealNum
+          derivativeapp = tangent a - tangent b :: RealNum
+          Interval lf uf = Data.Reals.Staged.upper $ approximate valueapp n
+          Interval ld ud = Data.Reals.Staged.lower $ approximate derivativeapp n
+          divU = appDiv (precUp n)
+          divD = appDiv (precDown n)          
+          leD = if ld == zero then posInf else (lf `divD` ld) :: Rounded
+          leU = if ld == zero then negInf else (lf `divU` ld) :: Rounded
+          ueD = if ud == zero then posInf else (lf `divD` ud) :: Rounded
+          ueU = if ud == zero then negInf else (lf `divU` ud) :: Rounded
+          ugD = (uf `divD` ud) :: Rounded
+          ugU = (uf `divU` ud) :: Rounded
+          lgD = (uf `divD` ld) :: Rounded
+          lgU = (uf `divU` ld) :: Rounded
+          upr = case (lf < zero, zero < ld, ud < zero) of
+                      (True,  True, _)    -> [Interval leU posInf]
+                      (True,  _,    True) -> [Interval negInf ueD]
+                      (True,  _,    _)    -> []
+                      (False, True, _)    -> [Interval ueU posInf]
+                      (False, _,    True) -> [Interval negInf leD]
+                      (False, _,    _)    -> [Interval ueU leD]
+          lwr = case (uf < zero, zero < ld, ud < zero) of
+                      (True,  True, _)    -> [Interval negInf ugD]
+                      (True,  _,    True) -> [Interval lgU posInf]
+                      (True,  _,    _)    -> [Interval lgU ugD]
+                      (False, True, _)    -> [Interval negInf lgD]
+                      (False, _,    True) -> [Interval ugU posInf]
+                      (False, _,    _)    -> []
+        in Approximation lwr upr
+     ) :: Estimate
+            
+estimate  :: (Forward RealNum -> Estimate) -> ClosedInterval Rounded -> Estimate
 estimate f (ClosedInterval (x,y)) = 
     limit (\n ->
       let test_interval u v = (limit $ \n -> (Approximation (Interval u v) (let w = midpoint u v in Interval w w))) :: RealNum
           i = test_interval x y
           xm = midpoint x y
-          Estimate valueapp derivativeapp = (apply f i) :: Estimate RealNum
-          Interval lf uf = Data.Reals.Staged.upper $ approximate valueapp n
-          Interval ld ud = Data.Reals.Staged.lower $ approximate derivativeapp n
-          subU = appSub (precUp n)
-          divU = appDiv (precUp n)
-          subD = appSub (precDown n)
-          divD = appDiv (precDown n)          
-          leD = if ld == zero then posInf else xm `subD` (lf `divD` ld) :: Rounded
-          leU = if ld == zero then negInf else xm `subU` (lf `divU` ld) :: Rounded
-          ueD = if ud == zero then posInf else xm `subD` (lf `divD` ud) :: Rounded
-          ueU = if ud == zero then negInf else xm `subU` (lf `divU` ud) :: Rounded
-          ugD = xm `subD` (uf `divD` ud) :: Rounded
-          ugU = xm `subU` (uf `divU` ud) :: Rounded
-          lgD = xm `subD` (uf `divD` ld) :: Rounded
-          lgU = xm `subU` (uf `divU` ld) :: Rounded
-          (lb,ub) = case (lf < zero, zero < ld, ud < zero) of
-                      (True,  True, _)    -> (leU,    posInf)
-                      (True,  _,    True) -> (negInf, ueD)
-                      (True,  _,    _)    -> (posInf, negInf)
-                      (False, True, _)    -> (ueU,    posInf)
-                      (False, _,    True) -> (negInf, leD)
-                      (False, _,    _)    -> (ueU,    leD)
-          (lc,uc) = case (uf < zero, zero < ld, ud < zero) of
-                      (True,  True, _)    -> (negInf, ugD)
-                      (True,  _,    True) -> (lgU, posInf)
-                      (True,  _,    _)    -> (lgU, ugD)
-                      (False, True, _)    -> (negInf, lgD)
-                      (False, _,    True) -> (ugU, posInf)
-                      (False, _,    _)    -> (posInf, negInf)
---          z = x 
-      in traceShow("imed", xm,lf,ld,ud,leD,ueD) $ Approximation (Interval lc uc) (Interval lb ub) -- (max lb x) (min ub y)) (Interval ld ud)
-    ) :: RealNum
+          subU = appSub (precUp n) xm
+          subD = appSub (precDown n) xm
+          im (Interval a b) = Interval (subU a) (subD b)
+          Approximation ls us = approximate (apply f i :: Estimate) n
+      in Approximation (fmap im ls) (fmap im us)
+    ) :: Estimate
 {-
 
 -- | Reals form a complete space, which means that every Cauchy sequence of reals has
