@@ -185,52 +185,58 @@ instance Lattice Estimate where
   sand = lift2 (\n -> sor)
   sor = lift2 (\n -> sand) --and,or are inverted because we're working on closed intervals
 
+
 instance LinearOrder (Forward (RealNum,RealNum)) (Estimate) where
    less a b =   
      limit (\n ->
-      let valueapp = fst (primal b - primal a) :: RealNum
+      let sgn q = compare q zero
+          valueapp = fst (primal b - primal a) :: RealNum
           derivativeapp = snd (tangent b - tangent a) :: RealNum
           Interval lf uf = Data.Reals.Staged.lower $ approximate valueapp n
           Interval ld ud = Data.Reals.Staged.lower $ approximate derivativeapp n
           divU = appDiv (precUp n)
           divD = appDiv (precDown n)          
-          leD = if ld == zero then posInf else (lf `divD` ld) :: Rounded
-          leU = if ld == zero then negInf else (lf `divU` ld) :: Rounded
-          ueD = if ud == zero then posInf else (lf `divD` ud) :: Rounded
-          ueU = if ud == zero then negInf else (lf `divU` ud) :: Rounded
-          ugD = if ud == zero then posInf else (uf `divD` ud) :: Rounded -- TODO check
-          ugU = if ud == zero then negInf else (uf `divU` ud) :: Rounded
-          lgD = if ud == zero then posInf else (uf `divD` ld) :: Rounded
-          lgU = if ud == zero then negInf else (uf `divU` ld) :: Rounded
-          upr = case (lf < zero, zero < ld, ud < zero) of
-                      (True,  True, _)    -> [Interval leU posInf]
-                      (True,  _,    True) -> [Interval negInf ueD]
-                      (True,  _,    _)    -> [] --Interval negInf posInf]
-                      (False, True, _)    -> [Interval ueU posInf]
-                      (False, _,    True) -> [Interval negInf leD]
-                      (False, _,    _)    -> sor [Interval negInf leD] [Interval ueU posInf] 
-          lwr = case (uf <= zero, zero < ld, ud < zero) of
-                      (True,  True, _)    -> [Interval ugU posInf]
-                      (True,  _,    True) -> [Interval negInf lgD]
-                      (True,  _,    _)    -> [Interval lgD ugU]
-                      (False, True, _)    -> [Interval lgU posInf]
-                      (False, _,    True) -> [Interval negInf ugD ]
-                      (False, _,    _)    -> []
+          upr = case (sgn lf, sgn ld, sgn ud) of
+                      (LT, GT, _)  -> [Interval (lf `divU` ld) posInf]
+                      (LT, EQ, _)  -> [Interval negInf posInf]
+                      (LT, _,  LT) -> [Interval negInf (lf `divD` ud)]
+                      (LT, _,  EQ) -> [Interval negInf posInf]
+                      (LT, _,  _)  -> []
+                      (_,  GT, _)  -> [Interval (lf `divU` ud) posInf]
+                      (_,  EQ, _)  -> [Interval negInf posInf]
+                      (_,  _,  LT) -> [Interval negInf (lf `divD` ld)]
+                      (_,  _,  EQ) -> [Interval negInf posInf]
+                      (_,  _,  _)  -> sor [Interval negInf (lf `divD` ld)] [Interval (lf `divU` ud) posInf] 
+          lwr = case (sgn uf, sgn ld, sgn ud) of
+                      (GT, GT, _)  -> [Interval (uf `divU` ld) posInf]
+                      (GT, EQ, _)  -> [Interval negInf posInf]
+                      (GT, _,  LT) -> [Interval negInf (uf `divD` ud)]
+                      (GT, _,  EQ) -> [Interval negInf posInf]                      
+                      (GT, _,  _)  -> []
+                      (_,  GT, _)  -> [Interval (uf `divU` ud) posInf]
+                      (_,  EQ, _)  -> [Interval negInf posInf]                      
+                      (_,  _,  LT) -> [Interval negInf (uf `divD` ld)]
+                      (_,  _,  EQ) -> [Interval negInf posInf]
+                      (_,  _,  _)  -> [Interval (uf `divD` ld) (uf `divU` ud)]
+
         in Approximation lwr upr
      ) :: Estimate
-            
+     
+{- | Estimate may be done using the derivative of the function. 
+  
+--}     
 estimate  :: (Forward (RealNum,RealNum) -> Estimate) -> ClosedInterval Rounded -> Estimate
 estimate f (ClosedInterval (x,y)) = 
     limit (\n ->
       let xm = midpoint x y
+          xmint = Interval xm xm
+          xmi = embed xmint :: RealNum
           i = (limit $ \n -> (Approximation (Interval x y) (Interval y x))) :: RealNum
-          xmi = (limit $ \n -> (Approximation (Interval xm xm) (Interval xm xm))) :: RealNum
-          subU = appSub (precUp n) xm
-          subD = appSub (precDown n) xm
-          im (Interval a b) = Interval (max (subU b) x) (min (subD a) y)
+          xsub = appSub (precUp n) xmint
+          xand (Interval a b) = Interval (max x a) (min y b)
           flt = filter (\(Interval a b) -> a <= b)
           Approximation ls us = approximate (apply f (xmi,i) :: Estimate) n
-      in Approximation (flt $ fmap im ls) (flt $ fmap im us)
+      in Approximation (flt $ fmap (xand.xsub) ls) (flt $ fmap (xand.xsub) us)
     ) :: Estimate
 {-
 
