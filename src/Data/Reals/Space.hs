@@ -66,8 +66,8 @@ class Discrete t where
 -- that 't' is the type of reals and 's' is the type of closed intervals. Then the subspaces
 -- represented by 's' are compact subspaces of 't' if the universal quantifier is a continuous
 -- map from @t -> 'Sigma'@ to 'Sigma'.
-class Compact s t | s -> t where
-  forall :: s -> (t -> Sigma) -> Sigma
+class Compact s t l | s -> t where
+  forall :: s -> (t -> l) -> Sigma
 
 class (LinearOrder t l) => Compact2 s t l where
   forall2 :: s -> (t -> l) -> Sigma

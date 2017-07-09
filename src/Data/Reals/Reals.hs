@@ -18,6 +18,7 @@ import Data.Reals.Staged
 import Data.Approximate.Floating.MPFR
 import Numeric.AD.Internal.Forward
 import Numeric.AD.Internal.Type
+import Data.NumInstances
 
 -- | A real number is implemented as a staged dyadic interval @'Interval' q@ where @q@ is the
 -- underlying approximate field (in practice these are dyadic rationals). @'RealNumQ' q@ can be used
@@ -81,7 +82,7 @@ instance (DyadicField q, ApproximateField (Interval q)) => Fractional (RealNumQ 
                                -- ({-traceShow ("fr",r, s)-} appFromRational s r )--, fromRational r)
 
 -- | The value @ClosedInterval(a,b)@ represents the closed interval [a,b] as a subspace of the reals.
-newtype ClosedInterval q = ClosedInterval (q, q)
+newtype ClosedInterval q = ClosedInterval (q, q) deriving Show
 
 {-
 Comparison of using (prec, rounding) -> approximation vs. prec -> (lower, upper):
@@ -100,6 +101,22 @@ True
 -}
 
 -- | Compactness of the closed interval
+instance Compact (ClosedInterval Rounded) (Forward (RealNum,RealNum)) Estimate where
+   forall i p =
+     limit (\n ->
+       let test_interval u v = Approximation (Interval u v) (let w = midpoint u v in Interval w w)
+           p2 :: Forward (RealNum,RealNum) -> Estimate
+           p2 x = limit $ \k -> approximate (p x) (k+1)
+           sweep :: [Interval Rounded] -> Sigma
+           sweep [] = limit $ \n -> Approximation True True
+           sweep ((Interval a b):xs) = sand (forall (ClosedInterval(a,b)) p2) (sweep xs)
+       in case approximate (estimate p i) n of
+            Approximation (x:xs) _ -> traceShow ("fails on", n, x:xs) $ Approximation False False
+            Approximation [] xs -> traceShow ("deeper on", n, i, xs) $ if n <= 0 then Approximation False True
+                                   else approximate (sweep xs) (n-1)
+     )
+     --          if (k >= n) then Approximation False (Data.Reals.Staged.upper $ sweep lst)
+{-
 instance (DyadicField q) => Compact (ClosedInterval q) (RealNumQ q) where
    forall (ClosedInterval(a,b)) p =
      limit (\n ->
@@ -112,8 +129,7 @@ instance (DyadicField q) => Compact (ClosedInterval q) (RealNumQ q) where
             (_, False) -> {-traceShow ("proof", midpoint a b) $-} Approximation False False
             otherwise -> if n <= 0 then Approximation False True
                                    else let c = midpoint a b in approximate (sand (forall (ClosedInterval(a,c)) p2) (forall (ClosedInterval(c,b)) p2)) (n-1)
-     )
-     --          if (k >= n) then Approximation False (Data.Reals.Staged.upper $ sweep lst)
+     )-}
 
 {-     
 instance (DyadicField q, LinearOrder t l) => Compact2 (ClosedInterval q) t l where
@@ -156,25 +172,25 @@ instance Lattice [Interval Rounded] where
   sand [] _ = []
   sand ((Interval a1 b1):c1) ((Interval a2 b2):c2)
       | a1 > a2 = sand ((Interval a2 b2):c2) ((Interval a1 b1):c1)
-      | a2 < b1 = (Interval a2 b1):(sand c1 ((Interval b1 b2):c2))
+      | a2 <= b1 = (Interval a2 b1):(sand c1 ((Interval b1 b2):c2))
       | otherwise = sand c1 ((Interval a2 b2):c2)
   sor x [] = x
   sor [] x = x
   sor ((Interval a1 b1):c1) ((Interval a2 b2):c2)
       | a1 > a2 = sor ((Interval a2 b2):c2) ((Interval a1 b1):c1)
-      | a2 < b1 = sor ((Interval a1 b2):c2) c1
+      | a2 <= b1 = sor ((Interval a1 b2):c2) c1
       | otherwise = (Interval a1 b1):(sor ((Interval a2 b2):c2) c1)
 
 instance Lattice Estimate where
-  sand = lift2 (\n -> sand)
-  sor = lift2 (\n -> sor)
+  sand = lift2 (\n -> sor)
+  sor = lift2 (\n -> sand) --and,or are inverted because we're working on closed intervals
 
-instance LinearOrder (Forward RealNum) (Estimate) where
+instance LinearOrder (Forward (RealNum,RealNum)) (Estimate) where
    less a b =   
      limit (\n ->
-      let valueapp = primal a - primal b :: RealNum
-          derivativeapp = tangent a - tangent b :: RealNum
-          Interval lf uf = Data.Reals.Staged.upper $ approximate valueapp n
+      let valueapp = fst (primal b - primal a) :: RealNum
+          derivativeapp = snd (tangent b - tangent a) :: RealNum
+          Interval lf uf = Data.Reals.Staged.lower $ approximate valueapp n
           Interval ld ud = Data.Reals.Staged.lower $ approximate derivativeapp n
           divU = appDiv (precUp n)
           divD = appDiv (precDown n)          
@@ -182,38 +198,39 @@ instance LinearOrder (Forward RealNum) (Estimate) where
           leU = if ld == zero then negInf else (lf `divU` ld) :: Rounded
           ueD = if ud == zero then posInf else (lf `divD` ud) :: Rounded
           ueU = if ud == zero then negInf else (lf `divU` ud) :: Rounded
-          ugD = (uf `divD` ud) :: Rounded
-          ugU = (uf `divU` ud) :: Rounded
-          lgD = (uf `divD` ld) :: Rounded
-          lgU = (uf `divU` ld) :: Rounded
+          ugD = if ud == zero then posInf else (uf `divD` ud) :: Rounded -- TODO check
+          ugU = if ud == zero then negInf else (uf `divU` ud) :: Rounded
+          lgD = if ud == zero then posInf else (uf `divD` ld) :: Rounded
+          lgU = if ud == zero then negInf else (uf `divU` ld) :: Rounded
           upr = case (lf < zero, zero < ld, ud < zero) of
                       (True,  True, _)    -> [Interval leU posInf]
                       (True,  _,    True) -> [Interval negInf ueD]
-                      (True,  _,    _)    -> []
+                      (True,  _,    _)    -> [] --Interval negInf posInf]
                       (False, True, _)    -> [Interval ueU posInf]
                       (False, _,    True) -> [Interval negInf leD]
-                      (False, _,    _)    -> [Interval ueU leD]
-          lwr = case (uf < zero, zero < ld, ud < zero) of
-                      (True,  True, _)    -> [Interval negInf ugD]
-                      (True,  _,    True) -> [Interval lgU posInf]
-                      (True,  _,    _)    -> [Interval lgU ugD]
-                      (False, True, _)    -> [Interval negInf lgD]
-                      (False, _,    True) -> [Interval ugU posInf]
+                      (False, _,    _)    -> sor [Interval negInf leD] [Interval ueU posInf] 
+          lwr = case (uf <= zero, zero < ld, ud < zero) of
+                      (True,  True, _)    -> [Interval ugU posInf]
+                      (True,  _,    True) -> [Interval negInf lgD]
+                      (True,  _,    _)    -> [Interval lgD ugU]
+                      (False, True, _)    -> [Interval lgU posInf]
+                      (False, _,    True) -> [Interval negInf ugD ]
                       (False, _,    _)    -> []
         in Approximation lwr upr
      ) :: Estimate
             
-estimate  :: (Forward RealNum -> Estimate) -> ClosedInterval Rounded -> Estimate
+estimate  :: (Forward (RealNum,RealNum) -> Estimate) -> ClosedInterval Rounded -> Estimate
 estimate f (ClosedInterval (x,y)) = 
     limit (\n ->
-      let test_interval u v = (limit $ \n -> (Approximation (Interval u v) (let w = midpoint u v in Interval w w))) :: RealNum
-          i = test_interval x y
-          xm = midpoint x y
+      let xm = midpoint x y
+          i = (limit $ \n -> (Approximation (Interval x y) (Interval y x))) :: RealNum
+          xmi = (limit $ \n -> (Approximation (Interval xm xm) (Interval xm xm))) :: RealNum
           subU = appSub (precUp n) xm
           subD = appSub (precDown n) xm
-          im (Interval a b) = Interval (subU a) (subD b)
-          Approximation ls us = approximate (apply f i :: Estimate) n
-      in Approximation (fmap im ls) (fmap im us)
+          im (Interval a b) = Interval (max (subU b) x) (min (subD a) y)
+          flt = filter (\(Interval a b) -> a <= b)
+          Approximation ls us = approximate (apply f (xmi,i) :: Estimate) n
+      in Approximation (flt $ fmap im ls) (flt $ fmap im us)
     ) :: Estimate
 {-
 
