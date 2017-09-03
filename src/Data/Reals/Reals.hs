@@ -6,7 +6,7 @@
 -}
 
 module Data.Reals.Reals (
-             RealNum, approximate, ClosedInterval (..), forall
+             RealNum, approximate, ClosedInterval (..), forall, estimate, Estimate
 ) where
 
 import Data.Approximate.ApproximateField
@@ -184,6 +184,9 @@ instance Lattice [Interval Rounded] where
 instance Lattice Estimate where
   sand = lift2 (\n -> sor)
   sor = lift2 (\n -> sand) --and,or are inverted because we're working on closed intervals
+
+instance Ord a => LinearOrder a Bool where
+   less a b = a < b
 
 
 instance LinearOrder (Forward (RealNum,RealNum)) (Estimate) where
