@@ -28,7 +28,6 @@ library
                    , base    >= 4.7 && <4.8
                    , haskell-mpfr >= 0.1
                    , time >= 1.4.2
-                   , HTF
                    , ad
                    , NumInstances
     hs-source-dirs:  src
@@ -45,7 +44,7 @@ Test-Suite test-reals
                    , QuickCheck
                    , test-framework
                    , test-framework-hunit
-                   , test-framework-quickcheck
+                   , test-framework-quickcheck2
     hs-source-dirs:  testsuite/tests
     default-language:Haskell2010
 
@@ -56,7 +55,6 @@ Benchmark bench-dyadic
                    , haskell-fast-reals == 0.1.0.0
                    , haskell-mpfr >= 0.1
                    , time
-                   , HTF
     hs-source-dirs:  testsuite/benchmarks
     default-language:Haskell2010
 
@@ -67,7 +65,6 @@ Benchmark bench-reals
                    , haskell-fast-reals == 0.1.0.0
                    , haskell-mpfr >= 0.1
                    , time
-                   , HTF
     hs-source-dirs:  testsuite/benchmarks
 --    ghc-options:     -O2
 --                     -threaded
