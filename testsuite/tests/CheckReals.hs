@@ -1,3 +1,5 @@
+{-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE ImpredicativeTypes #-}
 
 import Test.HUnit
 
@@ -51,95 +53,37 @@ outside x s = not $ inside x s
 i = ClosedInterval (appFromInteger 0 :: Rounded, appFromInteger 1)
 i2 = Interval{Data.Approximate.Interval.lower=appFromInteger 0 :: Rounded, Data.Approximate.Interval.upper=appFromInteger 1}
 
-prop_pos1 x = (xr `inside` [i2]) && xr `outside` (Data.Reals.Staged.upper e) ==> (f x :: Bool)
+prop_upper :: (forall t s.(Fractional t, LinearOrder t s) => (t -> s)) -> Rational -> Property
+prop_upper f x = xr `inside` [i2] ==> (xr `outside` (Data.Reals.Staged.upper e) <= (f x :: Bool))
   where 
       types = x :: (Ratio Integer)
       xr = appFromRational (precUp 52) x :: Rounded
       e = approximate (estimate f i :: Estimate) 52
-      f x = (x * (1 - x)) `less` (0.4)
-
-prop_pos2 x = (xr `inside` [i2]) && xr `outside` (Data.Reals.Staged.upper e) ==> (f x :: Bool)
-  where 
-      types = x :: (Ratio Integer)
-      xr = appFromRational (precUp 52) x :: Rounded
-      e = approximate (estimate f i :: Estimate) 52
-      f x = x `less` (0.5)
-
-prop_pos3 x = xr `inside` [i2] ==> (xr `outside` (Data.Reals.Staged.upper e) <= (f x :: Bool))
-  where 
-      types = x :: (Ratio Integer)
-      xr = appFromRational (precUp 52) x :: Rounded
-      e = approximate (estimate f i :: Estimate) 52
-      f x = 0.6 `less` x
-
-prop_pos4 x = xr `inside` [i2] ==> (xr `outside` (Data.Reals.Staged.upper e) <= (f x :: Bool))
-  where 
-      types = x :: (Ratio Integer)
-      xr = appFromRational (precUp 52) x :: Rounded
-      e = approximate (estimate f i :: Estimate) 52
-      f x = 0.5 `less` (x*x)
-
-prop_pos5 x = xr `inside` [i2] ==> (xr `outside` (Data.Reals.Staged.upper e) <= (f x :: Bool))
-  where 
-      types = x :: (Ratio Integer)
-      xr = appFromRational (precUp 52) x :: Rounded
-      e = approximate (estimate f i :: Estimate) 52
-      f x = x `less` 0.4
-
-prop_pos6 x = xr `inside` [i2] ==> (xr `outside` (Data.Reals.Staged.upper e) <= (f x :: Bool))
-  where 
-      types = x :: (Ratio Integer)
-      xr = appFromRational (precUp 52) x :: Rounded
-      e = approximate (estimate f i :: Estimate) 52
-      f x = (x*x) `less` (-0.5)
-
-prop_pos7 x = xr `inside` [i2] ==> (xr `outside` (Data.Reals.Staged.upper e) <= (f x :: Bool))
-  where 
-      types = x :: (Ratio Integer)
-      xr = appFromRational (precUp 52) x :: Rounded
-      e = approximate (estimate f i :: Estimate) 52
-      f x = ((x - 0.5)*(x - 0.5)) `less` (-0.5)
       
-prop_pos8 x = xr `inside` [i2] ==> (xr `outside` (Data.Reals.Staged.upper e) <= (f x :: Bool))
-  where 
-      types = x :: (Ratio Integer)
-      xr = appFromRational (precUp 52) x :: Rounded
-      e = approximate (estimate f i :: Estimate) 52
-      f x = 0.5 `less` (x*x)
+test_upper :: String -> (forall t s.(Fractional t, LinearOrder t s) => (t -> s)) -> Test.Framework.Test
+test_upper name f = testProperty name (prop_upper f)
 
-prop_pos9 x = xr `inside` [i2] ==> (xr `outside` (Data.Reals.Staged.upper e) <= (f x :: Bool))
-  where 
-      types = x :: (Ratio Integer)
-      xr = appFromRational (precUp 52) x :: Rounded
-      e = approximate (estimate f i :: Estimate) 52
-      f x = 0 `less` (x*x)
-
-prop_pos10 x = xr `inside` [i2] ==> (xr `outside` (Data.Reals.Staged.upper e) <= (f x :: Bool))
-  where 
-      types = x :: (Ratio Integer)
-      xr = appFromRational (precUp 52) x :: Rounded
-      e = approximate (estimate f i :: Estimate) 52
-      f x = x `less` 0.5
-
-prop_pos11 x = xr `inside` [i2] ==> (xr `outside` (Data.Reals.Staged.upper e) <= (f x :: Bool))
-  where 
-      types = x :: (Ratio Integer)
-      xr = appFromRational (precUp 52) x :: Rounded
-      e = approximate (estimate f i :: Estimate) 52
-      f x = (x*x) `less` 0.5
-
-prop_pos12 x = xr `inside` [i2] ==> (xr `outside` (Data.Reals.Staged.upper e) <= (f x :: Bool))
-  where 
-      types = x :: (Ratio Integer)
-      xr = appFromRational (precUp 52) x :: Rounded
-      e = approximate (estimate f i :: Estimate) 52
-      f x = ((x - 0.5)*(x - 0.5)) `less` (0.5)
+qcheck = [
+   test_upper "upper" (\x -> ((x - 0.5)*(x - 0.5)) `less` (0.5)),
+   test_upper "upper" (\x -> (x * (1 - x)) `less` (0.4)),
+   test_upper "upper" (\x -> x `less` (0.5)),
+   test_upper "upper LG_" (\x -> 0.6 `less` x),
+   test_upper "upper LE_" (\x -> 0.5 `less` (x*x)),
+   test_upper "upper L_L" (\x -> x `less` 0.4),
+   test_upper "upper L__" (\x -> (x*x) `less` (-0.5)),
+   test_upper "upper _G_" (\x -> 0.5 `less` x),
+   test_upper "upper _E_" (\x -> 0 `less` (x*x)),
+   test_upper "upper __L" (\x -> (x*x) `less` 0.5),
+   test_upper "upper __L" (\x -> x `less` 0.5),
+   test_upper "upper ___" (\x -> ((x - 0.5)*(x - 0.5)) `less` (-0.5)),
+   test_upper "upper ___" (\x -> ((x - 0.5)*(x - 0.5)) `less` 0)
+  ]
 
 --tests :: Test
 tests = hunit ++ qcheck
     where
        hunit = hUnitTestToTests $ TestList [TestLabel "test1" test_1, TestLabel "test2" test_2]
-       qcheck = [testProperty "pos1" prop_pos1, testProperty "pos2" prop_pos2, testProperty "pos3" prop_pos3, testProperty "pos4" prop_pos4, testProperty "pos5" prop_pos4, testProperty "pos6" prop_pos6, testProperty "pos7" prop_pos7, testProperty "pos8" prop_pos8, testProperty "pos9" prop_pos9, testProperty "pos10" prop_pos10, testProperty "pos11" prop_pos11, testProperty "pos12" prop_pos12]
+
 
 --main :: IO Counts
 --main = do runTestTT tests
