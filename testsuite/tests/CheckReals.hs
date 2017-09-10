@@ -59,24 +59,32 @@ prop_upper f x = xr `inside` [i2] ==> (xr `outside` (Data.Reals.Staged.upper e) 
       types = x :: (Ratio Integer)
       xr = appFromRational (precUp 52) x :: Rounded
       e = approximate (estimate f i :: Estimate) 52
-      
+
+prop_lower :: (forall t s.(Fractional t, LinearOrder t s) => (t -> s)) -> Rational -> Property
+prop_lower f x = xr `inside` [i2] ==> (xr `inside` (Data.Reals.Staged.lower e) <= not (f x :: Bool))
+  where 
+      types = x :: (Ratio Integer)
+      xr = appFromRational (precUp 52) x :: Rounded
+      e = approximate (estimate f i :: Estimate) 52
+
 test_upper :: String -> (forall t s.(Fractional t, LinearOrder t s) => (t -> s)) -> Test.Framework.Test
 test_upper name f = testProperty name (prop_upper f)
 
 qcheck = [
-   test_upper "upper" (\x -> ((x - 0.5)*(x - 0.5)) `less` (0.5)),
-   test_upper "upper" (\x -> (x * (1 - x)) `less` (0.4)),
-   test_upper "upper" (\x -> x `less` (0.5)),
-   test_upper "upper LG_" (\x -> 0.6 `less` x),
-   test_upper "upper LE_" (\x -> 0.5 `less` (x*x)),
-   test_upper "upper L_L" (\x -> x `less` 0.4),
-   test_upper "upper L__" (\x -> (x*x) `less` (-0.5)),
-   test_upper "upper _G_" (\x -> 0.5 `less` x),
-   test_upper "upper _E_" (\x -> 0 `less` (x*x)),
-   test_upper "upper __L" (\x -> (x*x) `less` 0.5),
-   test_upper "upper __L" (\x -> x `less` 0.5),
-   test_upper "upper ___" (\x -> ((x - 0.5)*(x - 0.5)) `less` (-0.5)),
-   test_upper "upper ___" (\x -> ((x - 0.5)*(x - 0.5)) `less` 0)
+   test_upper "upper GGGG" (\x -> 0 `less` x),
+   test_upper "upper GGLG" (\x -> ((x - 0.5)*(x - 0.5)) `less` (0.5)),
+   test_upper "upper GGLG" (\x -> (x * (1 - x)) `less` (0.4)),
+   test_upper "upper EELL" (\x -> x `less` (0.5)),
+   test_upper "upper LLGG" (\x -> 0.6 `less` x),
+   test_upper "upper LLEG" (\x -> 0.5 `less` (x*x)),
+   test_upper "upper LLLL" (\x -> x `less` 0.4),
+   test_upper "upper LLLE" (\x -> (x*x) `less` (-0.5)),
+   test_upper "upper EEGG" (\x -> 0.5 `less` x),
+   test_upper "upper GGEG" (\x -> 0 `less` (x*x)),
+   test_upper "upper GGLE" (\x -> (x*x) `less` 0.5),
+   test_upper "upper EELL" (\x -> x `less` 0.5),
+   test_upper "upper LLLG" (\x -> ((x - 0.5)*(x - 0.5)) `less` (-0.5)),
+   test_upper "upper EELG" (\x -> ((x - 0.5)*(x - 0.5)) `less` 0)
   ]
 
 --tests :: Test

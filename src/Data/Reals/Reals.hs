@@ -199,27 +199,27 @@ instance LinearOrder (Forward (RealNum,RealNum)) (Estimate) where
           Interval ld ud = Data.Reals.Staged.lower $ approximate derivativeapp n
           divU = appDiv (precUp n)
           divD = appDiv (precDown n)          
-          upr = traceShow (sgn lf, sgn ld, sgn ud) $ case (sgn lf, sgn ld, sgn ud) of
+          upr = traceShow (lf, ld, ud) $ case (sgn lf, sgn ld, sgn ud) of
                       (LT, GT, _)  -> [Interval (lf `divU` ld) posInf] -- 0.6 < x
                       (LT, EQ, _)  -> [Interval negInf posInf]  -- 0.5 < x^2
                       (LT, _,  LT) -> [Interval negInf (lf `divD` ud)] -- x < 0.4
                       (LT, _,  _)  -> [Interval negInf posInf] -- (x*x) < -0.5, (x-0.5)^2 < -0.5 
                       (_,  GT, _)  -> [Interval (lf `divU` ud) posInf] -- 0.5 < x
-                      (_,  EQ, _)  -> [Interval negInf posInf] -- 0 < x*x
+                      (_,  EQ, _)  -> [Interval (lf `divU` ud) posInf] -- 0 < x*x 
                       (_,  _,  LT) -> [Interval negInf (lf `divD` ld)] -- x < 0.5
-                      (_,  _,  EQ) -> [Interval negInf posInf] -- (x*x) < 0.5
-                      (_,  _,  _)  -> sor [Interval negInf (lf `divD` ld)] [Interval (lf `divU` ud) posInf]  -- (x-0.5)^2 < 0, (x-0.5)^2 < 0.5
-          lwr = case (sgn uf, sgn ld, sgn ud) of
+                      (_,  _,  EQ) -> [Interval negInf (lf `divD` ld)] -- (x*x) < 0.5
+                      (_,  _,  _)  -> sor [Interval negInf (lf `divD` ld)] [Interval (lf `divU` ud) posInf]  -- (x-0.5)^2- < 0, (x-0.5)^2 < 0.5-}
+          lwr = traceShow (sgn uf, sgn ld, sgn ud) $  case (sgn uf, sgn ld, sgn ud) of
                       (GT, GT, _)  -> [Interval (uf `divU` ld) posInf]
-                      (GT, EQ, _)  -> [Interval negInf posInf]
-                      (GT, _,  LT) -> [Interval negInf (uf `divD` ud)]
-                      (GT, _,  EQ) -> [Interval negInf posInf]                      
+                      (GT, EQ, _)  -> []
+                      (GT, _,  LT) -> [Interval negInf (uf `divD` ud)] --missing test
+                      (GT, _,  EQ) -> []
                       (GT, _,  _)  -> []
                       (_,  GT, _)  -> [Interval (uf `divU` ud) posInf]
-                      (_,  EQ, _)  -> [Interval negInf posInf]                      
+                      (_,  EQ, _)  -> [Interval (uf `divU` ud) posInf]
                       (_,  _,  LT) -> [Interval negInf (uf `divD` ld)]
                       (_,  _,  EQ) -> [Interval negInf posInf]
-                      (_,  _,  _)  -> [Interval (uf `divD` ld) (uf `divU` ud)]
+                      (_,  _,  _)  -> [Interval  (uf `divU` ud) (uf `divD` ld)]
 
         in Approximation lwr upr
      ) :: Estimate
@@ -238,7 +238,8 @@ estimate f (ClosedInterval (x,y)) =
           xand (Interval a b) = Interval (max x a) (min y b)
           flt = filter (\(Interval a b) -> a <= b)
           Approximation ls us = approximate (apply f (xmi,i) :: Estimate) n
-      in Approximation (flt $ fmap (xand.xsub) ls) (flt $ fmap (xand.xsub) us)
+          a = Approximation (flt $ fmap (xand.xsub) ls) (flt $ fmap (xand.xsub) us)
+      in traceShow a a
     ) :: Estimate
 {-
 
