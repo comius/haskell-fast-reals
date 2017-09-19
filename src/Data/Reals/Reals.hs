@@ -101,53 +101,55 @@ True
 -}
 
 -- | Compactness of the closed interval
-instance Compact (ClosedInterval Rounded) (Forward (RealNum,RealNum)) Estimate where
-   forall i p =
+
+instance DyadicField q => Compact (ClosedInterval q) (Forward (RealNumQ q,RealNumQ q)) (EstimateQ q) where
+   forall = forallEstimate
+
+forallEstimate :: DyadicField q => ClosedInterval q -> (Forward (RealNumQ q, RealNumQ q) -> EstimateQ q) -> Sigma
+forallEstimate i p =
      limit (\n ->
        let test_interval u v = Approximation (Interval u v) (let w = midpoint u v in Interval w w)
-           p2 :: Forward (RealNum,RealNum) -> Estimate
            p2 x = limit $ \k -> approximate (p x) (k+1)
-           sweep :: [Interval Rounded] -> Sigma
            sweep [] = limit $ \n -> Approximation True True
-           sweep ((Interval a b):xs) = sand (forall (ClosedInterval(a,b)) p2) (sweep xs)
+           sweep ((Interval a b):xs) = sand (forallEstimate (ClosedInterval(a,b)) p2) (sweep xs)
        in case approximate (estimate p i) n of
-            Approximation (x:xs) _ -> traceShow ("fails on", n, x:xs) $ Approximation False False
-            Approximation [] xs -> traceShow ("deeper on", n, i, xs) $ if n <= 0 then Approximation False True
+            Approximation (x:xs) _ -> Approximation False False
+            Approximation [] xs -> if n <= 0 then Approximation False True
                                    else approximate (sweep xs) (n-1)
      )
-     --          if (k >= n) then Approximation False (Data.Reals.Staged.upper $ sweep lst)
-{-
-instance (DyadicField q) => Compact (ClosedInterval q) (RealNumQ q) where
-   forall (ClosedInterval(a,b)) p =
+
+
+--instance (DyadicField q) => Compact (ClosedInterval q) (RealNumQ q) Sigma where
+forallRecursive :: (DyadicField q) => ClosedInterval q -> (RealNumQ q -> Sigma) -> Sigma
+forallRecursive (ClosedInterval(a,b)) p =
      limit (\n ->
        let test_interval u v = Approximation (Interval u v) (let w = midpoint u v in Interval w w)
            x = limit $ let t = test_interval a b in \n -> t
            ap = approximate (p x) 0
            p2 x = limit $ \k -> approximate (p x) (k+1)
        in case (Data.Reals.Staged.lower ap, Data.Reals.Staged.upper ap) of
-            (True, _) -> {-traceShow ("holds", a,b)$-} Approximation True True
-            (_, False) -> {-traceShow ("proof", midpoint a b) $-} Approximation False False
+            (True, _) -> Approximation True True
+            (_, False) -> Approximation False False
             otherwise -> if n <= 0 then Approximation False True
-                                   else let c = midpoint a b in approximate (sand (forall (ClosedInterval(a,c)) p2) (forall (ClosedInterval(c,b)) p2)) (n-1)
-     )-}
+                                   else let c = midpoint a b in approximate (sand (forallRecursive (ClosedInterval(a,c)) p2) (forallRecursive (ClosedInterval(c,b)) p2)) (n-1)
+     )
 
-{-     
-instance (DyadicField q, LinearOrder t l) => Compact2 (ClosedInterval q) t l where
-   forall2 i@(ClosedInterval(a,b)) p =
+{- instance (DyadicField q, LinearOrder t l) => Compact2 (ClosedInterval q) t l where -}
+forallSweep :: (DyadicField q) => ClosedInterval q -> (RealNumQ q -> Sigma) -> Sigma
+forallSweep i@(ClosedInterval(a,b)) p =
      limit (\n ->
        let test_interval u v = Approximation (Interval u v) (let w = midpoint u v in Interval w w)
-     --      zblj = estimate p i
            sweep [] = Approximation True True
            sweep ((k,a,b):lst) = let x = limit $ let t = test_interval a b in \n -> t
                                      ap = approximate (p x) k
                                   in case (Data.Reals.Staged.lower ap, Data.Reals.Staged.upper ap) of
-                                      (True, _) -> traceShow ("holds", n,a,b) $ sweep lst
-                                      (_, False) -> traceShow ("proof", midpoint a b) $ Approximation False False
+                                      (True, _) -> sweep lst
+                                      (_, False) -> Approximation False False
                                       otherwise -> if (k >= n) then Approximation False (Data.Reals.Staged.upper $ sweep lst)
                                                                else (let c = midpoint a b in sweep ((k+1,a,c) : (k+1,c,b) : lst))
        in sweep [(0,a,b)]
      )
-  -}   
+
 -- | Overtness of reals on closed interval [a,b]
 instance (DyadicField q) => Overt (ClosedInterval q) (RealNumQ q) where
     exists (ClosedInterval (a,b)) p =
@@ -165,9 +167,10 @@ instance (DyadicField q) => Overt (ClosedInterval q) (RealNumQ q) where
      )
 
 
-type Estimate = StagedWithFun ([Interval Rounded])
+type EstimateQ q = StagedWithFun ([Interval q])
+type Estimate = EstimateQ Rounded
 
-instance Lattice [Interval Rounded] where
+instance Ord q => Lattice [Interval q] where
   sand _ [] = []
   sand [] _ = []
   sand ((Interval a1 b1):c1) ((Interval a2 b2):c2)
@@ -189,17 +192,17 @@ instance Ord a => LinearOrder a Bool where
    less a b = a < b
 
 
-instance LinearOrder (Forward (RealNum,RealNum)) (Estimate) where
+instance DyadicField q => LinearOrder (Forward (RealNumQ q,RealNumQ q)) (EstimateQ q) where
    less a b =   
      limit (\n ->
       let sgn q = compare q zero
-          valueapp = fst (primal b - primal a) :: RealNum
-          derivativeapp = snd (tangent b - tangent a) :: RealNum
+          valueapp = fst (primal b - primal a) 
+          derivativeapp = snd (tangent b - tangent a)
           Interval lf uf = Data.Reals.Staged.lower $ approximate valueapp n
           Interval ld ud = Data.Reals.Staged.lower $ approximate derivativeapp n
           divU = appDiv (precUp n)
           divD = appDiv (precDown n)          
-          upr = traceShow (lf, ld, ud) $ case (sgn lf, sgn ld, sgn ud) of
+          upr = case (sgn lf, sgn ld, sgn ud) of
                       (LT, GT, _)  -> [Interval (lf `divU` ld) posInf] -- 0.6 < x
                       (LT, EQ, _)  -> [Interval negInf posInf]  -- 0.5 < x^2
                       (LT, _,  LT) -> [Interval negInf (lf `divD` ud)] -- x < 0.4
@@ -209,7 +212,7 @@ instance LinearOrder (Forward (RealNum,RealNum)) (Estimate) where
                       (_,  _,  LT) -> [Interval negInf (lf `divD` ld)] -- x < 0.5
                       (_,  _,  EQ) -> [Interval negInf (lf `divD` ld)] -- (x*x) < 0.5
                       (_,  _,  _)  -> sor [Interval negInf (lf `divD` ld)] [Interval (lf `divU` ud) posInf]  -- (x-0.5)^2- < 0, (x-0.5)^2 < 0.5-}
-          lwr = traceShow (sgn uf, sgn ld, sgn ud) $  case (sgn uf, sgn ld, sgn ud) of
+          lwr = case (sgn uf, sgn ld, sgn ud) of
                       (GT, GT, _)  -> [Interval (uf `divU` ld) posInf]
                       (GT, EQ, _)  -> []
                       (GT, _,  LT) -> [Interval negInf (uf `divD` ud)] --missing test
@@ -222,25 +225,25 @@ instance LinearOrder (Forward (RealNum,RealNum)) (Estimate) where
                       (_,  _,  _)  -> [Interval  (uf `divU` ud) (uf `divD` ld)]
 
         in Approximation lwr upr
-     ) :: Estimate
+     )
      
 {- | Estimate may be done using the derivative of the function. 
   
 --}     
-estimate  :: (Forward (RealNum,RealNum) -> Estimate) -> ClosedInterval Rounded -> Estimate
+--
+estimate :: DyadicField q => (Forward (RealNumQ q,RealNumQ q) -> EstimateQ q) -> ClosedInterval q -> EstimateQ q
 estimate f (ClosedInterval (x,y)) = 
     limit (\n ->
       let xm = midpoint x y
           xmint = Interval xm xm
-          xmi = embed xmint :: RealNum
-          i = (limit $ \n -> (Approximation (Interval x y) (Interval y x))) :: RealNum
+          xmi = embed xmint
+          i = (limit $ \n -> (Approximation (Interval x y) (Interval y x)))
           xsub = appSub (precUp n) xmint
           xand (Interval a b) = Interval (max x a) (min y b)
           flt = filter (\(Interval a b) -> a <= b)
-          Approximation ls us = approximate (apply f (xmi,i) :: Estimate) n
-          a = Approximation (flt $ fmap (xand.xsub) ls) (flt $ fmap (xand.xsub) us)
-      in traceShow a a
-    ) :: Estimate
+          Approximation ls us = approximate (apply f (xmi,i)) n
+      in Approximation (flt $ fmap (xand.xsub) ls) (flt $ fmap (xand.xsub) us)
+    )
 {-
 
 -- | Reals form a complete space, which means that every Cauchy sequence of reals has
