@@ -20,6 +20,7 @@ library
                      Data.Reals.Staged
                      Data.Approximate.Interval
                      Data.Reals.Space
+                     Data.Reals.Estimates
                    --Data.Approximate.Floating.HMPFR
     -- other-modules:
     other-extensions:Arrows, MultiParamTypeClasses, FunctionalDependencies,
