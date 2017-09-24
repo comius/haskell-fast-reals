@@ -1,5 +1,7 @@
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE ImpredicativeTypes #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 import Test.HUnit
 
@@ -11,10 +13,14 @@ import Data.Approximate.ApproximateField
 import Data.Reals.Reals
 import Data.Reals.Space
 import Data.Reals.Staged
+import Data.Reals.Estimates
 import Test.Framework
 import Test.Framework.Providers.HUnit
 import Test.Framework.Providers.QuickCheck2
 import Test.QuickCheck
+
+instance Ord a => LinearOrder a Bool where
+   less a b = a < b
 
 assertIn a b x = assertBool 
       ("Result " ++ show x ++ " in interval [" ++ show a ++ "," ++ show b ++ "]")
@@ -50,7 +56,7 @@ inside x [] = False
 inside x (l:ls) = (x >= (Data.Approximate.Interval.lower l) && x <= (Data.Approximate.Interval.upper l)) || inside x ls
 outside x s = not $ inside x s
 
-i = ClosedInterval (appFromInteger 0 :: Rounded, appFromInteger 1)
+i = Interval (appFromInteger 0 :: Rounded) (appFromInteger 1)
 i2 = Interval{Data.Approximate.Interval.lower=appFromInteger 0 :: Rounded, Data.Approximate.Interval.upper=appFromInteger 1}
 
 prop_upper :: (forall t s.(Fractional t, LinearOrder t s) => (t -> s)) -> Rational -> Property

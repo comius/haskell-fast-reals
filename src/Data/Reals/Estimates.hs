@@ -18,15 +18,14 @@ type EstimateQ q = StagedWithFun ([Interval q])
 type Estimate = EstimateQ Rounded
 
 instance DyadicField q => Compact (ClosedInterval q) (Forward (RealNumQ q,RealNumQ q)) (EstimateQ q) where
-   forall = forallEstimate
+   forall (ClosedInterval (a,b)) p = forallEstimate p (Interval a b)
 
-forallEstimate :: DyadicField q => ClosedInterval q -> (Forward (RealNumQ q, RealNumQ q) -> EstimateQ q) -> Sigma
-forallEstimate i p =
+forallEstimate :: DyadicField q => (Forward (RealNumQ q, RealNumQ q) -> EstimateQ q) -> Interval q -> Sigma
+forallEstimate p i =
      limit (\n ->
        let test_interval u v = Approximation (Interval u v) (let w = midpoint u v in Interval w w)
-           p2 x = limit $ \k -> approximate (p x) (k+1)
-           sweep [] = limit $ \n -> Approximation True True
-           sweep ((Interval a b):xs) = sand (forallEstimate (ClosedInterval(a,b)) p2) (sweep xs)
+           p2 x = limit $ \k -> approximate (p x) (k+5) -- TODO optimize this spot
+           sweep lst = foldr sand (embed True) (map (forallEstimate p2) lst)
        in case approximate (estimate p i) n of
             Approximation (x:xs) _ -> Approximation False False
             Approximation [] xs -> if n <= 0 then Approximation False True
@@ -88,8 +87,8 @@ instance DyadicField q => LinearOrder (Forward (RealNumQ q,RealNumQ q)) (Estimat
      )
      
 {- | Estimate may be done using the derivative of the function. --}
-estimate :: DyadicField q => (Forward (RealNumQ q,RealNumQ q) -> EstimateQ q) -> ClosedInterval q -> EstimateQ q
-estimate f (ClosedInterval (x,y)) = 
+estimate :: DyadicField q => (Forward (RealNumQ q,RealNumQ q) -> EstimateQ q) -> Interval q -> EstimateQ q
+estimate f (Interval x y) = 
     limit (\n ->
       let xm = midpoint x y
           xmint = Interval xm xm
