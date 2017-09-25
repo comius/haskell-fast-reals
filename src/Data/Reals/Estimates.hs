@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts, TypeSynonymInstances, MultiParamTypeClasses, FlexibleInstances, Rank2Types #-}
 
 module Data.Reals.Estimates (
-             forall, estimate, Estimate, forallEstimate
+             forall, estimate, Estimate, forallEstimate, existsEstimate, complement
 ) where
 
 import Data.Approximate.Floating.MPFR 
@@ -13,6 +13,7 @@ import Data.Reals.Space
 import Numeric.AD.Internal.Forward
 import Numeric.AD.Internal.Type
 import Data.NumInstances
+import Debug.Trace
 
 type EstimateQ q = StagedWithFun ([Interval q])
 type Estimate = EstimateQ Rounded
@@ -23,27 +24,49 @@ instance DyadicField q => Compact (ClosedInterval q) (Forward (RealNumQ q,RealNu
 forallEstimate :: DyadicField q => (Forward (RealNumQ q, RealNumQ q) -> EstimateQ q) -> Interval q -> Sigma
 forallEstimate p i =
      limit (\n ->
-       let test_interval u v = Approximation (Interval u v) (let w = midpoint u v in Interval w w)
-           p2 x = limit $ \k -> approximate (p x) (k+5) -- TODO optimize this spot
+       let p2 x = limit $ \k -> approximate (p x) (k+5) -- TODO optimize this spot
            sweep lst = foldr sand (embed True) (map (forallEstimate p2) lst)
-       in case approximate (estimate p i) n of
-            Approximation (x:xs) _ -> Approximation False False
-            Approximation [] xs -> if n <= 0 then Approximation False True
+           a = approximate (estimate p i) n
+       in case a of 
+            Approximation (x:xs) _ -> traceShow("nw", x:xs) $ Approximation False False -- negative example
+            Approximation [] [] -> Approximation True True  -- not unsure
+            Approximation [] xs -> if n <= 0 then Approximation False True -- need to recurse, possibly bisect
                                    else approximate (sweep xs) (n-1)
      )
+
+
+existsEstimate :: DyadicField q => (Forward (RealNumQ q, RealNumQ q) -> EstimateQ q) -> Interval q -> Sigma
+existsEstimate p i =
+     limit (\n ->
+       let p2 x = limit $ \k -> approximate (p x) (k+5) -- TODO optimize this spot
+           sweep lst = foldr sor (embed False) (map (existsEstimate p2) lst)
+           a = approximate (estimate p i) n
+       in case a of  -- (not true) (don't know)
+            Approximation l1 _  | l1 == [i] -> Approximation False False -- there can be no witness
+            Approximation l1 l2 |  complement i (sor l1 l2) /= [] -> traceShow ("w",complement i (sor l1 l2)) $ Approximation True True -- the witness
+            Approximation l1 l2 -> let rest = sand (complement i l1) l2
+                                   in if n <= 0 then Approximation False True 
+                                        else approximate (sweep rest) (n-1)
+     )
+
+complement (Interval a b) [] | a==b = []
+complement (Interval a b) [] = [Interval a b]
+complement (Interval a b) ((Interval a1 b1):xs) | a==a1 = complement (Interval b1 b) xs
+complement (Interval a b) ((Interval a1 b1):xs) = (Interval a a1):(complement (Interval b1 b) xs)
+
 
 instance Ord q => Lattice [Interval q] where
   sand _ [] = []
   sand [] _ = []
   sand ((Interval a1 b1):c1) ((Interval a2 b2):c2)
       | a1 > a2 = sand ((Interval a2 b2):c2) ((Interval a1 b1):c1)
-      | a2 <= b1 = (Interval a2 b1):(sand c1 ((Interval b1 b2):c2))
+      | a2 <= b1 = (Interval a2 (min b1 b2)):(sand c1 ((Interval b1 b2):c2))
       | otherwise = sand c1 ((Interval a2 b2):c2)
   sor x [] = x
   sor [] x = x
   sor ((Interval a1 b1):c1) ((Interval a2 b2):c2)
-      | a1 > a2 = sor ((Interval a2 b2):c2) ((Interval a1 b1):c1)
-      | a2 <= b1 = sor ((Interval a1 b2):c2) c1
+      | a1 > a2 = sor ((Interval a2 b2):c2) ((Interval a1 b1):c1) -- swap
+      | a2 <= b1 = sor ((Interval a1 (max b1 b2)):c2) c1 -- a1 < a2 ... b1 b2
       | otherwise = (Interval a1 b1):(sor ((Interval a2 b2):c2) c1)
 
 instance Lattice Estimate where
@@ -93,12 +116,13 @@ estimate f (Interval x y) =
       let xm = midpoint x y
           xmint = Interval xm xm
           xmi = embed xmint
-          i = (limit $ \n -> (Approximation (Interval x y) (Interval y x)))
+          i = (limit $ \n -> (Approximation (Interval x y) (Interval x y)))
           xsub = appSub (precUp n) xmint
+          xsub2 = appSub (precDown n) xmint -- TODO some of the new intervals can touch after this step...
           xand (Interval a b) = Interval (max x a) (min y b)
           flt = filter (\(Interval a b) -> a <= b)
           Approximation ls us = approximate (apply f (xmi,i)) n
-      in Approximation (flt $ fmap (xand.xsub) ls) (flt $ fmap (xand.xsub) us)
+      in Approximation (flt $ reverse $ fmap (xand.xsub) ls) (flt $ reverse $ fmap (xand.xsub2) us)
     )
     
     

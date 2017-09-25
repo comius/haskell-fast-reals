@@ -90,7 +90,9 @@ qcheck = [
    test_upper "upper GGLE" (\x -> (x*x) `less` 0.5),
    test_upper "upper EELL" (\x -> x `less` 0.5),
    test_upper "upper LLLG" (\x -> ((x - 0.5)*(x - 0.5)) `less` (-0.5)),
-   test_upper "upper EELG" (\x -> ((x - 0.5)*(x - 0.5)) `less` 0)
+   test_upper "upper EELG" (\x -> ((x - 0.5)*(x - 0.5)) `less` 0),
+   test_upper "upper p1" (\x -> 0 `less` ((x + 0.1) * (x - 0.9) * (x - 1.1))),
+   test_upper "upper n1" (\x -> 0 `more` ((x + 0.1) * (x - 0.9) * (x - 1.1)))
   ]
 
 --tests :: Test
