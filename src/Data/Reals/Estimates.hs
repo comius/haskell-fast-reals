@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts, TypeSynonymInstances, MultiParamTypeClasses, FlexibleInstances, Rank2Types #-}
 
 module Data.Reals.Estimates (
-             forall, estimate, Estimate, forallEstimate, existsEstimate, complement
+             forall, estimate, Estimate, forallEstimate, existsEstimate, complement, cutEstimate
 ) where
 
 import Data.Approximate.Floating.MPFR 
@@ -48,6 +48,27 @@ existsEstimate p i =
                                    in if n <= 0 then Approximation False True 
                                         else approximate (sweep rest) (n-1)
      )
+
+
+cutEstimate :: DyadicField q => (Forward (RealNumQ q, RealNumQ q) -> EstimateQ q) -> (Forward (RealNumQ q, RealNumQ q) -> EstimateQ q) -> Interval q -> RealNumQ q
+cutEstimate l u i =
+     let find i n = find2 i n n
+         find2 i 0 _ = Approximation i i
+         find2 (Interval a b) n m = find2 i2 (n-1) (m+1)
+           where Approximation lle ule = approximate (estimate l li) m
+                 Approximation lue uue = approximate (estimate u ui) m
+                 first [] = Interval b a
+                 first (i : xs) = i
+                 xm = midpoint a b
+                 li = Interval a xm
+                 ui = Interval xm b
+                 lt = complement li (sor lle ule)
+                 ut = complement ui (sor lue uue)
+                 Interval _ a2 = first (reverse lt)
+                 Interval b2 _ = first ut
+                 i2 = Interval a2  b2 -- next interval        
+     in limit (find i)
+
 
 complement (Interval a b) [] | a==b = []
 complement (Interval a b) [] = [Interval a b]
