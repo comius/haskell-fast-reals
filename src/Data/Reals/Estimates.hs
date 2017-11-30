@@ -10,8 +10,6 @@ import Data.Reals.Reals
 import Data.Approximate.ApproximateField
 import Data.Approximate.Interval
 import Data.Reals.Space
-import Numeric.AD.Internal.Forward
-import Numeric.AD.Internal.Type
 import Data.NumInstances
 import Debug.Trace
 
@@ -20,6 +18,18 @@ type Estimate = EstimateQ Rounded
 
 instance DyadicField q => Compact (ClosedInterval q) (Forward (RealNumQ q,RealNumQ q)) (EstimateQ q) where
    forall (ClosedInterval (a,b)) p = forallEstimate p (Interval a b)
+
+
+data Forward t = Forward { primal :: t, tangent :: t}
+
+
+instance Num a => Num (Forward a) where
+   negate x   = Forward {primal = negate (primal x), tangent = negate (tangent x)}
+   x + y = Forward {primal = (primal x)+(primal y), tangent = (tangent x) + tangent y}
+   x * y = Forward {primal = (primal x)*(primal y), tangent = (primal x)*(tangent y)+(tangent x)*(primal y)}
+   fromInteger i   = Forward {primal = fromInteger i, tangent = fromInteger 0}
+
+apply f x = f (Forward {primal = x, tangent = 1})
 
 forallEstimate :: DyadicField q => (Forward (RealNumQ q, RealNumQ q) -> EstimateQ q) -> Interval q -> Sigma
 forallEstimate p i =
